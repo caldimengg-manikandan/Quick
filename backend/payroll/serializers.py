@@ -4,6 +4,8 @@ from .models import PayrollPeriod, PayrollRecord
 
 
 class PayrollPeriodSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
+
     class Meta:
         model = PayrollPeriod
         fields = ("id", "start_date", "end_date", "created_at")
@@ -11,6 +13,9 @@ class PayrollPeriodSerializer(serializers.ModelSerializer):
 
 
 class PayrollRecordSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
+    employee = serializers.CharField(source="employee.id", read_only=True)
+    generated_by = serializers.CharField(source="generated_by.id", read_only=True)
     period = PayrollPeriodSerializer(read_only=True)
 
     class Meta:

@@ -10,9 +10,9 @@ from .views import (
 urlpatterns = [
     # Admin endpoints
     path("admin/",        AdminTaskListCreateView.as_view(), name="task-admin-list"),
-    path("admin/<int:pk>/", AdminTaskDetailView.as_view(),  name="task-admin-detail"),
+    path("admin/<str:pk>/", AdminTaskDetailView.as_view(),  name="task-admin-detail"),
 
     # Employee endpoints
     path("my/",                              EmployeeTaskListView.as_view(),   name="task-my-list"),
-    path("my/<int:pk>/<str:action>/",        EmployeeTaskActionView.as_view(), name="task-my-action"),
+    path("my/<str:pk>/<str:action>/",        EmployeeTaskActionView.as_view(), name="task-my-action"),
 ]

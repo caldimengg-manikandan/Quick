@@ -7,6 +7,7 @@ User = get_user_model()
 
 
 class EmployeeUserSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
     class Meta:
         model = User
         fields = ("id", "username", "email", "first_name", "last_name", "role")
@@ -14,6 +15,7 @@ class EmployeeUserSerializer(serializers.ModelSerializer):
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
     user = EmployeeUserSerializer(read_only=True)
 
     class Meta:
@@ -34,6 +36,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
 
 
 class EmployeeCreateSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
     username = serializers.CharField(write_only=True)
     password = serializers.CharField(write_only=True)
     email = serializers.EmailField(required=False, allow_blank=True)

@@ -86,6 +86,18 @@ export function AuthProvider({ children }) {
     [refreshMe]
   )
 
+  const loginWithGoogle = useCallback(
+    async (accessToken) => {
+      const data = await apiRequest("/auth/google/", {
+        method: "POST",
+        json: { access_token: accessToken }
+      })
+      setTokens({ access: data.access, refresh: data.refresh })
+      await refreshMe()
+    },
+    [refreshMe]
+  )
+
   const logout = useCallback(() => {
     setTokens(null)
     setUser(null)
@@ -96,8 +108,8 @@ export function AuthProvider({ children }) {
   }, [refreshMe])
 
   const value = useMemo(
-    () => ({ isReady, user, login, logout, refreshMe }),
-    [isReady, user, login, logout, refreshMe]
+    () => ({ isReady, user, login, loginWithGoogle, logout, refreshMe }),
+    [isReady, user, login, loginWithGoogle, logout, refreshMe]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

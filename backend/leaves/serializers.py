@@ -4,11 +4,17 @@ from .models import LeaveRequest
 
 
 class LeaveRequestSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
+    employee = serializers.CharField(source='employee.id', read_only=True)
+    employee_name = serializers.CharField(source='employee.user.get_full_name', read_only=True)
+    approved_by = serializers.CharField(source='approved_by.id', read_only=True)
+
     class Meta:
         model = LeaveRequest
         fields = (
             "id",
             "employee",
+            "employee_name",
             "leave_type",
             "start_date",
             "end_date",
@@ -24,6 +30,8 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
 
 
 class LeaveRequestCreateSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
+
     class Meta:
         model = LeaveRequest
         fields = ("id", "leave_type", "start_date", "end_date", "reason")

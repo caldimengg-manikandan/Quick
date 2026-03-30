@@ -1,11 +1,15 @@
 from rest_framework import serializers
 
+from employees.models import Employee
 from .models import Shift
 
 
 class ShiftSerializer(serializers.ModelSerializer):
     id = serializers.CharField(read_only=True)
-    employee = serializers.CharField(source="employee.id", read_only=True)
+    employee = serializers.PrimaryKeyRelatedField(
+        queryset=Employee.objects.all(),
+        pk_field=serializers.CharField()
+    )
 
     class Meta:
         model = Shift

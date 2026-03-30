@@ -38,6 +38,6 @@ class PayrollRecordSerializer(serializers.ModelSerializer):
 
 
 class PayrollGenerateSerializer(serializers.Serializer):
-    employee = serializers.IntegerField()
+    employee = serializers.CharField()
     start = serializers.DateField()
     end = serializers.DateField()

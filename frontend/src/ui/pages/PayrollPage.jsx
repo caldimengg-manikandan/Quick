@@ -50,7 +50,7 @@ export function PayrollPage() {
     try {
       await apiRequest("/payroll/generate/", {
         method: "POST",
-        json: { employee: Number(employeeId), start, end }
+        json: { employee: employeeId, start, end }
       })
       await load()
     } catch (err) {
@@ -75,14 +75,23 @@ export function PayrollPage() {
       {isAdmin ? (
         <Card title="Generate Payroll">
           <form className="grid3" onSubmit={generate}>
-            <Input label="Employee ID" value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} placeholder="e.g. 1" required />
+            <div className="field">
+              <label className="label">Employee</label>
+              <select className="qt-input" value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} required>
+                <option value="">Select Employee...</option>
+                {employees.map((emp) => (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.user?.first_name || emp.user?.username} ({emp.employee_id})
+                  </option>
+                ))}
+              </select>
+            </div>
             <Input label="Start" type="date" value={start} onChange={(e) => setStart(e.target.value)} required />
             <Input label="End" type="date" value={end} onChange={(e) => setEnd(e.target.value)} required />
             <div className="gridSpan3 row">
               <Button type="submit" disabled={submitting}>
                 {submitting ? "Generating…" : "Generate"}
               </Button>
-              {employeeOptions.length ? <span className="muted">Tip: Employee IDs: {employeeOptions.map((o) => `${o.id}`).join(", ")}</span> : null}
             </div>
           </form>
         </Card>

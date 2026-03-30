@@ -20,7 +20,7 @@ urlpatterns = [
     path("break/start/", BreakStartView.as_view(), name="break-start"),
     path("break/end/", BreakEndView.as_view(), name="break-end"),
     path("timesheets/", TimesheetView.as_view(), name="timesheets"),
-    path("admin/employees/<int:employee_id>/logs/", AdminEmployeeTimeLogsView.as_view(), name="admin-employee-logs"),
+    path("admin/employees/<str:employee_id>/logs/", AdminEmployeeTimeLogsView.as_view(), name="admin-employee-logs"),
 ]
 
 urlpatterns += router.urls

@@ -5,15 +5,36 @@ from .models import Task
 
 
 class AssignedToSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
     class Meta:
         model  = User
         fields = ("id", "username", "first_name", "last_name")
 
 
 class TaskSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
+    assigned_to = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        required=False,
+        allow_null=True,
+        pk_field=serializers.CharField()
+    )
+    assigned_by = serializers.PrimaryKeyRelatedField(
+        read_only=True,
+        pk_field=serializers.CharField()
+    )
+    
     assigned_to_detail = AssignedToSerializer(source="assigned_to", read_only=True)
-    assigned_by_name   = serializers.SerializerMethodField()
-    actual_hours       = serializers.ReadOnlyField()
+    assigned_by_name = serializers.SerializerMethodField()
+    actual_hours = serializers.ReadOnlyField()
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        # Ensure MongoDB ObjectIds are cast to strings for JSON
+        if ret.get('id'): ret['id'] = str(ret['id'])
+        if ret.get('assigned_to'): ret['assigned_to'] = str(ret['assigned_to'])
+        if ret.get('assigned_by'): ret['assigned_by'] = str(ret['assigned_by'])
+        return ret
 
     class Meta:
         model  = Task

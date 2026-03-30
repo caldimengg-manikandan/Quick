@@ -18,6 +18,7 @@ export function SchedulingPage() {
   const [error, setError] = useState("")
   const [busyId, setBusyId] = useState(null)
 
+  const [employees, setEmployees] = useState([])
   const [employeeId, setEmployeeId] = useState("")
   const [shiftStart, setShiftStart] = useState("")
   const [shiftEnd, setShiftEnd] = useState("")
@@ -55,9 +56,18 @@ export function SchedulingPage() {
     }
   }
 
+  async function loadEmployees() {
+    if (!isAdmin) return
+    try {
+      const data = await apiRequest("/employees/")
+      setEmployees(unwrapResults(data))
+    } catch { /* ignore */ }
+  }
+
   useEffect(() => {
     load()
-  }, [])
+    loadEmployees()
+  }, [isAdmin])
 
   async function createShift(e) {
     e.preventDefault()
@@ -67,7 +77,7 @@ export function SchedulingPage() {
       await apiRequest("/scheduling/shifts/", {
         method: "POST",
         json: {
-          employee: Number(employeeId),
+          employee: employeeId,
           shift_start: toIsoLocal(shiftStart),
           shift_end: toIsoLocal(shiftEnd),
           title,
@@ -153,7 +163,17 @@ export function SchedulingPage() {
       {isAdmin ? (
         <Card title="Create Shift">
           <form className="grid3" onSubmit={createShift}>
-            <Input label="Employee ID" value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} placeholder="e.g. 1" required />
+            <div className="field">
+              <label className="label">Employee</label>
+              <select className="qt-input" value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} required>
+                <option value="">Select Employee...</option>
+                {employees.map((emp) => (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.user?.first_name || emp.user?.username} ({emp.employee_id})
+                  </option>
+                ))}
+              </select>
+            </div>
             <Input label="Start" type="datetime-local" value={shiftStart} onChange={(e) => setShiftStart(e.target.value)} required />
             <Input label="End" type="datetime-local" value={shiftEnd} onChange={(e) => setShiftEnd(e.target.value)} required />
             <div className="gridSpan3">

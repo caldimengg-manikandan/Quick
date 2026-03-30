@@ -130,6 +130,7 @@ export function LeavesPage() {
           <div className="table">
             <div className="tableRow tableHead">
               <div>ID</div>
+              {user?.role === "admin" && <div>Employee</div>}
               <div>Type</div>
               <div>Start</div>
               <div>End</div>
@@ -139,6 +140,7 @@ export function LeavesPage() {
             {items.map((i) => (
               <div key={i.id} className="tableRow">
                 <div>{i.id}</div>
+                {user?.role === "admin" && <div style={{fontWeight:600}}>{i.employee_name || "Unknown"}</div>}
                 <div>{i.leave_type}</div>
                 <div>{i.start_date}</div>
                 <div>{i.end_date}</div>

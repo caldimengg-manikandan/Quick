@@ -4,6 +4,9 @@ from .models import Shift
 
 
 class ShiftSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
+    employee = serializers.CharField(source="employee.id", read_only=True)
+
     class Meta:
         model = Shift
         fields = ("id", "employee", "shift_start", "shift_end", "title", "notes", "created_at", "updated_at")

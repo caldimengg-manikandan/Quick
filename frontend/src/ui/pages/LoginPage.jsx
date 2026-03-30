@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../../state/auth/useAuth.js"
 import { routes } from "../routes.js"
+import { useGoogleLogin } from "@react-oauth/google"
 
 /* ──────────────────────────────────────────────
    REVIEW DATA
@@ -142,8 +143,24 @@ function ReviewCarousel() {
    MAIN LOGIN PAGE
 ────────────────────────────────────────────── */
 export function LoginPage() {
-  const { login } = useAuth()
+  const { login, loginWithGoogle } = useAuth()
   const navigate   = useNavigate()
+
+  const googleLoginHandler = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setLoading(true)
+      try {
+        await loginWithGoogle(tokenResponse.access_token)
+        navigate(routes.dashboard)
+      } catch (err) {
+        setError(err?.body?.detail || "Google login failed.")
+        setShowHint(false)
+      } finally {
+        setLoading(false)
+      }
+    },
+    onError: () => setError("Google login failed.")
+  })
 
   // mode: "signin" | "register"
   const [mode,     setMode]     = useState("signin")
@@ -318,7 +335,7 @@ export function LoginPage() {
           {/* Social Connect */}
           <div className="qt-connect-label">Connect with</div>
           <div className="qt-social-row">
-            <button className="qt-social-btn" id="btn-google" type="button">
+            <button className="qt-social-btn" id="btn-google" type="button" onClick={() => googleLoginHandler()}>
               <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
                 <path fill="#EA4335" d="M24 9.5c3.5 0 6.5 1.2 8.9 3.2l6.7-6.7C35.4 2.2 30.1 0 24 0 14.8 0 6.9 5.4 3.1 13.3l7.8 6.1C13 13.1 18 9.5 24 9.5z"/>
                 <path fill="#4285F4" d="M46.6 24.5c0-1.6-.1-3.2-.4-4.7H24v9h12.7c-.6 3.1-2.4 5.7-5 7.4l7.7 6c4.5-4.1 7.2-10.2 7.2-17.7z"/>

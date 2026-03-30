@@ -4,13 +4,23 @@ from .models import Break, TimeLog
 
 
 class BreakSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
+    duration_seconds = serializers.SerializerMethodField()
+
     class Meta:
         model = Break
-        fields = ("id", "break_start", "break_end", "created_at")
+        fields = ("id", "break_start", "break_end", "duration_seconds", "created_at")
         read_only_fields = ("id", "created_at")
+
+    def get_duration_seconds(self, obj):
+        if not obj.break_end:
+            return 0
+        return int((obj.break_end - obj.break_start).total_seconds())
 
 
 class TimeLogSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
+    employee = serializers.CharField(source="employee.id", read_only=True)
     breaks = BreakSerializer(many=True, read_only=True)
     worked_seconds = serializers.SerializerMethodField()
     worked_hours = serializers.SerializerMethodField()

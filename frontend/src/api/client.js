@@ -51,11 +51,6 @@ export async function apiRequest(path, init = {}, attemptRefresh = true) {
 
     if (!res.ok) {
       const err = { status: res.status, body: await safeJson(res) }
-      // On server errors (5xx) or 404, try mock fallback for GET requests
-      if ((res.status >= 500 || res.status === 404) && (!init.method || init.method === "GET")) {
-        const mock = getMock(path)
-        if (mock !== null) { _offline = true; return mock }
-      }
       throw err
     }
 
@@ -63,21 +58,10 @@ export async function apiRequest(path, init = {}, attemptRefresh = true) {
     return safeJson(res)
 
   } catch (err) {
-    // Network failure (backend completely down) → use mock data for reads
     if (err && typeof err === "object" && "status" in err) {
-      // Already a structured API error – re-throw
       throw err
     }
-    // TypeError / network failure
-    const mock = getMock(path)
-    if (mock !== null) {
-      _offline = true
-      // For mutation requests (POST/DELETE), return a fake 200 success
-      if (init.method && init.method !== "GET") {
-        return { ok: true, mock: true }
-      }
-      return mock
-    }
+    _offline = true
     throw err
   }
 }

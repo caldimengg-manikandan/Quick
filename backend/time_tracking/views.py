@@ -177,19 +177,34 @@ class TimesheetView(APIView):
                     "clock_out_photo": request.build_absolute_uri(log.clock_out_photo.url) if log.clock_out_photo else None,
                     "break_seconds": log.break_seconds(),
                     "worked_hours": round(worked_hours, 2),
+                    "worked_seconds": log.worked_seconds(),
                 }
             )
-            daily_totals.setdefault(log.work_date, 0.0)
-            daily_totals[log.work_date] += worked_hours
+            daily_totals.setdefault(log.work_date, {"hours": 0.0, "seconds": 0})
+            daily_totals[log.work_date]["hours"] += worked_hours
+            daily_totals[log.work_date]["seconds"] += log.worked_seconds()
 
         daily = []
         total_hours = 0.0
+        total_seconds = 0
         daily_overtime = 0.0
-        for d, hours in sorted(daily_totals.items(), key=lambda x: x[0]):
+        daily_overtime_seconds = 0
+        for d, data in sorted(daily_totals.items(), key=lambda x: x[0]):
+            hours = data["hours"]
+            seconds = data["seconds"]
             ot = max(0.0, hours - 8.0)
-            daily.append({"date": str(d), "hours": round(hours, 2), "overtime_hours": round(ot, 2)})
+            ot_seconds = max(0, seconds - (8 * 3600))
+            daily.append({
+                "date": str(d), 
+                "hours": round(hours, 2), 
+                "seconds": seconds,
+                "overtime_hours": round(ot, 2),
+                "overtime_seconds": ot_seconds
+            })
             total_hours += hours
+            total_seconds += seconds
             daily_overtime += ot
+            daily_overtime_seconds += ot_seconds
 
         weekly_hours = {}
         for d, hours in daily_totals.items():
@@ -213,7 +228,9 @@ class TimesheetView(APIView):
                 "weekly": weekly,
                 "totals": {
                     "hours": round(total_hours, 2),
+                    "seconds": total_seconds,
                     "daily_overtime_hours": round(daily_overtime, 2),
+                    "daily_overtime_seconds": daily_overtime_seconds,
                     "weekly_overtime_hours": round(weekly_overtime, 2),
                 },
             }

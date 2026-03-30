@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../../state/auth/useAuth.js"
+import { apiRequest } from "../../api/client.js"
 import { routes } from "../routes.js"
 import { useGoogleLogin } from "@react-oauth/google"
 
@@ -143,7 +144,7 @@ function ReviewCarousel() {
    MAIN LOGIN PAGE
 ────────────────────────────────────────────── */
 export function LoginPage() {
-  const { login, loginWithGoogle } = useAuth()
+  const { login, register, loginWithGoogle } = useAuth()
   const navigate   = useNavigate()
 
   const googleLoginHandler = useGoogleLogin({
@@ -154,88 +155,82 @@ export function LoginPage() {
         navigate(routes.dashboard)
       } catch (err) {
         setError(err?.body?.detail || "Google login failed.")
-        setShowHint(false)
-      } finally {
-        setLoading(false)
-      }
+      } finally { setLoading(false) }
     },
     onError: () => setError("Google login failed.")
   })
 
-  // mode: "signin" | "register"
+  // modes: signin, register
   const [mode,     setMode]     = useState("signin")
+  const [role,     setRole]     = useState("employee") // admin or employee
+  const [success,  setSuccess]  = useState("")
 
-  // Shared fields
+  // Field states
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
+  const [fullName, setFullName] = useState("")
+  const [email,    setEmail]    = useState("")
   const [showPass, setShowPass] = useState(false)
   const [error,    setError]    = useState("")
   const [loading,  setLoading]  = useState(false)
-  const [showHint, setShowHint] = useState(false)
 
-  // Register-only fields
+  // Registration specific
   const [tab,      setTab]      = useState("email")
   const [phone,    setPhone]    = useState("")
-  const [fullName, setFullName] = useState("")
-  const [agree1,   setAgree1]   = useState(false)
-  const [agree2,   setAgree2]   = useState(false)
   const [robot,    setRobot]    = useState(false)
-  const [nameErr,  setNameErr]  = useState(false)
+  const [agree1,   setAgree1]   = useState(true) // Offers
+  const [agree2,   setAgree2]   = useState(false) // Terms
 
-  function switchMode(m) {
+  function changeMode(m) {
     setMode(m)
     setError("")
-    setShowHint(false)
-    setNameErr(false)
+    setSuccess("")
   }
 
   async function onSubmit(e) {
     e.preventDefault()
     setError("")
+    setSuccess("")
 
-    // ── SIGN IN ──────────────────────────────────────
     if (mode === "signin") {
-      if (!username.trim() || !password) {
-        setError("Please enter your username and password.")
-        return
-      }
+      if (!username.trim() || !password) return setError("Enter credentials.")
       setLoading(true)
       try {
         await login(username.trim(), password)
         navigate(routes.dashboard)
       } catch (err) {
-        const msg =
-          err?.body?.detail ||
-          (typeof err?.body === "string" ? err.body : "") ||
-          "Login failed. Check your credentials."
-        setError(msg)
-        setShowHint(true)
-      } finally {
-        setLoading(false)
-      }
-      return
-    }
+        setError(err?.body?.detail || "Login failed.")
+      } finally { setLoading(false) }
+    } else {
+      // REGISTER
+      if (!fullName.trim() || !username.trim() || !password) return setError("All fields required.")
+      if (!robot) return setError("Please confirm you are not a robot.")
+      if (!agree2) return setError("Please agree to terms.")
 
-    // ── REGISTER ─────────────────────────────────────
-    if (!fullName.trim()) { setNameErr(true); return }
-    setNameErr(false)
-
-    if (!robot) { setError("Please verify that you are not a robot."); return }
-
-    setLoading(true)
-    try {
-      const id = tab === "email" ? username.trim() : phone.trim()
-      await login(id, password)
-      navigate(routes.dashboard)
-    } catch (err) {
-      const msg =
-        err?.body?.detail ||
-        (typeof err?.body === "string" ? err.body : "") ||
-        "Login failed. Check your credentials."
-      setError(msg)
-      setShowHint(true)
-    } finally {
-      setLoading(false)
+      setLoading(true)
+      try {
+        const [first, ...rest] = fullName.split(" ")
+        // Register but do NOT log in yet
+        await apiRequest("/auth/register/", {
+          method: "POST",
+          json: {
+            username: username.trim(),
+            password,
+            email,
+            first_name: first,
+            last_name: rest.join(" "),
+            role
+          }
+        })
+        
+        // Success! Redirect to login mode
+        setMode("signin")
+        setSuccess("Account created successfully! Please sign in with your credentials.")
+        setError("")
+        // Keep the username filled for convenience
+      } catch (err) {
+        setError(err?.body?.detail || "Registration failed.")
+      } finally { setLoading(false) }
     }
   }
 
@@ -318,13 +313,13 @@ export function LoginPage() {
               id="mode-signin"
               type="button"
               className={`qt-mode-btn${mode === "signin" ? " qt-mode-active" : ""}`}
-              onClick={() => switchMode("signin")}
+              onClick={() => changeMode("signin")}
             >Sign In</button>
             <button
               id="mode-register"
               type="button"
               className={`qt-mode-btn${mode === "register" ? " qt-mode-active" : ""}`}
-              onClick={() => switchMode("register")}
+              onClick={() => changeMode("register")}
             >Create Account</button>
           </div>
 
@@ -399,13 +394,7 @@ export function LoginPage() {
                 </button>
               </div>
 
-              {showHint && (
-                <div className="qt-hint-box">
-                  <div className="qt-hint-title">🟡 Backend offline – Demo mode</div>
-                  <div className="qt-hint-body">Try: <strong>admin / admin</strong> or <strong>employee / employee</strong></div>
-                </div>
-              )}
-
+              {success && <div className="qt-success-box">{success}</div>}
               {error && <div className="qt-error-box">{error}</div>}
 
               <button
@@ -419,7 +408,7 @@ export function LoginPage() {
 
               <div className="qt-signin-link">
                 Don't have an account?{" "}
-                <a href="#" className="qt-link" onClick={e => { e.preventDefault(); switchMode("register") }}>
+                <a href="#" className="qt-link" onClick={e => { e.preventDefault(); changeMode("register") }}>
                   Create one
                 </a>
               </div>
@@ -433,27 +422,24 @@ export function LoginPage() {
               <div className="qt-field-wrap">
                 <input
                   id="inp-fullname"
-                  className={`qt-input${nameErr ? " qt-input-error" : ""}`}
+                  className="qt-input"
                   placeholder="Full name"
                   value={fullName}
-                  onChange={e => { setFullName(e.target.value); setNameErr(false) }}
+                  onChange={e => setFullName(e.target.value)}
                   autoComplete="name"
                   autoFocus
                 />
-                {nameErr && <div className="qt-field-err">Name is required</div>}
               </div>
 
-              {/* Email / Phone Tab */}
+              {/* Tabs: Email / Phone */}
               <div className="qt-tab-row">
                 <button
                   type="button"
-                  id="tab-email"
                   className={`qt-tab-btn${tab === "email" ? " qt-tab-active" : ""}`}
                   onClick={() => setTab("email")}
                 >Email</button>
                 <button
                   type="button"
-                  id="tab-phone"
                   className={`qt-tab-btn${tab === "phone" ? " qt-tab-active" : ""}`}
                   onClick={() => setTab("phone")}
                 >Phone Number</button>
@@ -462,13 +448,12 @@ export function LoginPage() {
               {tab === "email" ? (
                 <div className="qt-field-wrap">
                   <input
-                    id="inp-email"
+                    id="inp-email-reg"
                     className="qt-input"
                     type="email"
                     placeholder="Email address"
-                    value={username}
-                    onChange={e => setUsername(e.target.value)}
-                    autoComplete="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
                   />
                 </div>
               ) : (
@@ -476,7 +461,6 @@ export function LoginPage() {
                   <div className="qt-phone-prefix">
                     <span className="qt-flag">🇮🇳</span>
                     <span>+91</span>
-                    <span className="qt-caret">▾</span>
                   </div>
                   <input
                     id="inp-phone"
@@ -485,10 +469,20 @@ export function LoginPage() {
                     placeholder="Phone number"
                     value={phone}
                     onChange={e => setPhone(e.target.value)}
-                    autoComplete="tel"
                   />
                 </div>
               )}
+
+              {/* Username field (shown as 'employee' in screenshot) */}
+              <div className="qt-field-wrap">
+                <input
+                  id="inp-username-reg"
+                  className="qt-input"
+                  placeholder="Username (e.g. employee)"
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                />
+              </div>
 
               {/* Password */}
               <div className="qt-field-wrap qt-pass-wrap">
@@ -512,9 +506,8 @@ export function LoginPage() {
               </div>
 
               {/* Agree checkboxes */}
-              <label className="qt-check-row" htmlFor="chk-offers">
+              <label className="qt-check-row">
                 <input
-                  id="chk-offers"
                   type="checkbox"
                   checked={agree1}
                   onChange={e => setAgree1(e.target.checked)}
@@ -525,18 +518,15 @@ export function LoginPage() {
                 </span>
               </label>
 
-              <label className="qt-check-row" htmlFor="chk-terms">
+              <label className="qt-check-row">
                 <input
-                  id="chk-terms"
                   type="checkbox"
                   checked={agree2}
                   onChange={e => setAgree2(e.target.checked)}
                   className="qt-checkbox"
                 />
                 <span className="qt-check-label">
-                  I agree to QuickTIMS's{" "}
-                  <a href="#" className="qt-link">Terms of Service</a> &amp;{" "}
-                  <a href="#" className="qt-link">Privacy Policy</a>.
+                  I agree to QuickTIMS's <a href="#" className="qt-link">Terms of Service</a> &amp; <a href="#" className="qt-link">Privacy Policy</a>.
                 </span>
               </label>
 
@@ -569,13 +559,6 @@ export function LoginPage() {
                 </div>
               </div>
 
-              {showHint && (
-                <div className="qt-hint-box">
-                  <div className="qt-hint-title">🟡 Backend offline – Demo mode</div>
-                  <div className="qt-hint-body">Try: <strong>admin / admin</strong> or <strong>employee / employee</strong></div>
-                </div>
-              )}
-
               {error && <div className="qt-error-box">{error}</div>}
 
               <button
@@ -589,7 +572,7 @@ export function LoginPage() {
 
               <div className="qt-signin-link">
                 Already have an account?{" "}
-                <a href="#" className="qt-link" onClick={e => { e.preventDefault(); switchMode("signin") }}>
+                <a href="#" className="qt-link" onClick={e => { e.preventDefault(); changeMode("signin") }}>
                   Sign in
                 </a>
               </div>

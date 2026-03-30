@@ -30,12 +30,22 @@ class TimeLogViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         qs = TimeLog.objects.select_related("employee", "employee__user").prefetch_related("breaks")
+
+        # Date range filters (work_date)
+        date_from = _parse_date(self.request.query_params.get("date_from"))
+        date_to   = _parse_date(self.request.query_params.get("date_to"))
+        if date_from:
+            qs = qs.filter(work_date__gte=date_from)
+        if date_to:
+            qs = qs.filter(work_date__lte=date_to)
+
         if self.request.user.role == "admin":
             return qs.order_by("-clock_in")
         employee = Employee.objects.filter(user=self.request.user).first()
         if not employee:
             return qs.none()
         return qs.filter(employee=employee).order_by("-clock_in")
+
 
 
 class ClockInView(APIView):

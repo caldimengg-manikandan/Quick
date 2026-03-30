@@ -19,18 +19,22 @@ class BreakSerializer(serializers.ModelSerializer):
 
 
 class TimeLogSerializer(serializers.ModelSerializer):
-    id = serializers.CharField(read_only=True)
-    employee = serializers.CharField(source="employee.id", read_only=True)
-    breaks = BreakSerializer(many=True, read_only=True)
-    worked_seconds = serializers.SerializerMethodField()
-    worked_hours = serializers.SerializerMethodField()
-    break_seconds = serializers.SerializerMethodField()
+    id                = serializers.CharField(read_only=True)
+    employee          = serializers.CharField(source="employee.id", read_only=True)
+    employee_name     = serializers.SerializerMethodField()
+    employee_username = serializers.SerializerMethodField()
+    breaks            = BreakSerializer(many=True, read_only=True)
+    worked_seconds    = serializers.SerializerMethodField()
+    worked_hours      = serializers.SerializerMethodField()
+    break_seconds     = serializers.SerializerMethodField()
 
     class Meta:
         model = TimeLog
         fields = (
             "id",
             "employee",
+            "employee_name",
+            "employee_username",
             "work_date",
             "clock_in",
             "clock_in_lat",
@@ -53,6 +57,14 @@ class TimeLogSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         read_only_fields = ("id", "created_at", "updated_at")
+
+    def get_employee_name(self, obj):
+        user = obj.employee.user
+        full_name = f"{user.first_name} {user.last_name}".strip()
+        return full_name or user.username
+
+    def get_employee_username(self, obj):
+        return obj.employee.user.username
 
     def get_break_seconds(self, obj):
         return obj.break_seconds()

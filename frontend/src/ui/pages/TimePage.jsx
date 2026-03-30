@@ -1,8 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 
 import { apiRequest, unwrapResults } from "../../api/client.js"
-import { getAddress, buildMapUrl } from "../../api/geocoding.js"
-import { Button, Pill, formatDateTime } from "../components/kit.jsx"
+import { getAddress } from "../../api/geocoding.js"
+import { formatDateTime } from "../components/kit.jsx"
+
+import {
+  Camera,
+  MapPin,
+  CheckCircle2,
+  Clock,
+  Play,
+  Square,
+  Coffee,
+  Loader2,
+  Paperclip,
+  Check,
+  RotateCcw,
+  Edit3,
+  ChevronUp,
+  AlertCircle,
+} from "lucide-react"
 
 // ─── GPS helpers ──────────────────────────────────────────────
 const TARGET_ACCURACY_M = 100
@@ -12,6 +29,14 @@ function findOpenLog(logs)  { return logs.find((l) => !l.clock_out) ?? null }
 function findOpenBreak(log) {
   if (!log?.breaks) return null
   return log.breaks.find((b) => !b.break_end) ?? null
+}
+
+function formatDuration(seconds) {
+  if (!seconds && seconds !== 0) return "--:--:--"
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = seconds % 60
+  return [h, m, s].map(v => String(v).padStart(2, '0')).join(':')
 }
 
 function getPosition(onProgress) {
@@ -39,8 +64,8 @@ function SelfieCapture({ onCapture, onCancel }) {
   const canvasRef = useRef(null)
   const streamRef = useRef(null)
 
-  const [ready,    setReady]    = useState(false)   // camera stream live
-  const [captured, setCaptured] = useState(null)    // data URL after snap
+  const [ready,    setReady]    = useState(false)
+  const [captured, setCaptured] = useState(null)
   const [camError, setCamError] = useState("")
 
   useEffect(() => {
@@ -78,7 +103,7 @@ function SelfieCapture({ onCapture, onCancel }) {
     const ctx = canvas.getContext("2d")
     ctx.save()
     ctx.translate(size, 0)
-    ctx.scale(-1, 1)                         // mirror for selfie
+    ctx.scale(-1, 1)
     ctx.drawImage(video, 0, 0, size, size)
     ctx.restore()
     const dataUrl = canvas.toDataURL("image/jpeg", 0.92)
@@ -101,16 +126,16 @@ function SelfieCapture({ onCapture, onCancel }) {
   return (
     <div className="selfieOverlay">
       <div className="selfieSheet">
-        {/* Header */}
         <div className="selfieHeader">
           <button className="selfieClose" onClick={onCancel} type="button" aria-label="Close">✕</button>
           <div>
-            <h2 className="selfieTitle">Clock in</h2>
-            <div className="selfieSubtitle">🕐 {timeStr}, IST</div>
+            <h2 className="selfieTitle">Verify Identity</h2>
+            <div className="selfieSubtitle" style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 4 }}>
+              <Clock size={12} /> {timeStr}, IST
+            </div>
           </div>
         </div>
 
-        {/* Camera ring */}
         <div className="selfieRingWrap">
           <svg className={`selfieRingSvg ${captured ? "ringDone" : ready ? "ringActive" : ""}`} viewBox="0 0 240 240">
             <circle cx="120" cy="120" r="108" className="ringTrack" />
@@ -120,7 +145,7 @@ function SelfieCapture({ onCapture, onCancel }) {
           <div className="selfieCircle">
             {camError ? (
               <div className="selfieCamError">
-                <span style={{ fontSize: 32 }}>📷</span>
+                <Camera size={32} opacity={0.5} />
                 <p>{camError}</p>
               </div>
             ) : captured ? (
@@ -137,7 +162,6 @@ function SelfieCapture({ onCapture, onCancel }) {
           <canvas ref={canvasRef} style={{ display: "none" }} />
         </div>
 
-        {/* Instruction */}
         <div className="selfieInstruction">
           {captured
             ? "Kindly, smile 😊"
@@ -146,18 +170,20 @@ function SelfieCapture({ onCapture, onCancel }) {
               : camError ? "Camera unavailable" : "Opening camera…"}
         </div>
 
-        {/* Light warning */}
         <div className="selfieWarning">
           <span className="selfieWarnDot">ℹ</span>
           Make sure you are in a place where there is enough light to take a clear photo.
         </div>
 
-        {/* Actions */}
         <div className="selfieActions">
           {captured ? (
             <>
-              <button className="selfieBtnOutline" onClick={retake} type="button">Retake</button>
-              <button className="selfieBtnPrimary" onClick={onCancel} type="button">✓ Use this photo</button>
+              <button className="selfieBtnOutline" onClick={retake} type="button">
+                <RotateCcw size={16} style={{ marginRight: 6 }} /> Retake
+              </button>
+              <button className="selfieBtnPrimary" onClick={onCancel} type="button">
+                <Check size={16} strokeWidth={3} style={{ marginRight: 6 }} /> Use this photo
+              </button>
             </>
           ) : (
             <button
@@ -175,32 +201,14 @@ function SelfieCapture({ onCapture, onCancel }) {
   )
 }
 
-// ─── Accordion section ────────────────────────────────────────
-function Accordion({ title, badge, children, defaultOpen = false }) {
-  const [open, setOpen] = useState(defaultOpen)
-  return (
-    <div className="accordion">
-      <button
-        className={`accordionBtn ${open ? "accordionOpen" : ""}`}
-        onClick={() => setOpen((v) => !v)}
-        type="button"
-      >
-        <span className="accordionLabel">{title}</span>
-        {badge && <span className="accordionBadge">{badge}</span>}
-        <span className="accordionChevron">{open ? "▲" : "▼"}</span>
-      </button>
-      {open && <div className="accordionBody">{children}</div>}
-    </div>
-  )
-}
-
 // ─── Main TimePage ────────────────────────────────────────────
 export function TimePage() {
-  const [logs, setLogs]         = useState([])
+  const [logs, setLogs]           = useState([])
   const [timesheet, setTimesheet] = useState(null)
-  const [error, setError]       = useState("")
-  const [loading, setLoading]   = useState(true)
-  const [busy, setBusy]         = useState(false)
+  const [error, setError]         = useState("")
+  const [loading, setLoading]     = useState(true)
+  const [busy, setBusy]           = useState(false)
+  const [logsOpen, setLogsOpen]   = useState(true)
 
   // GPS state
   const [resolvedAddr, setResolvedAddr] = useState("")
@@ -212,14 +220,14 @@ export function TimePage() {
   const [sessionPhoto, setSessionPhoto] = useState(null)
 
   // Selfie state
-  const [selfieFile,    setSelfieFile]    = useState(null)   // File for upload
-  const [selfiePreview, setSelfiePreview] = useState(null)   // data URL for preview
-  const [showSelfie,    setShowSelfie]    = useState(false)  // modal open
+  const [selfieFile,    setSelfieFile]    = useState(null)
+  const [selfiePreview, setSelfiePreview] = useState(null)
+  const [showSelfie,    setShowSelfie]    = useState(false)
 
   const openLog   = useMemo(() => findOpenLog(logs),   [logs])
   const openBreak = useMemo(() => findOpenBreak(openLog), [openLog])
 
-  // Init GPS on mount
+  // Init GPS
   useEffect(() => {
     async function initGPS() {
       try {
@@ -236,15 +244,12 @@ export function TimePage() {
   async function load() {
     setLoading(true); setError("")
     try {
-      // Fetch logs and timesheets independently so one failure doesn't block the other
       const [logsRes, tsRes] = await Promise.allSettled([
         apiRequest("/time/logs/"),
         apiRequest("/time/timesheets/"),
       ])
       if (logsRes.status === "fulfilled") setLogs(unwrapResults(logsRes.value))
-      else setError(logsRes.reason?.body?.detail || "Failed to load time logs.")
       if (tsRes.status === "fulfilled") setTimesheet(tsRes.value)
-      // silently ignore timesheet failures (e.g. admin with no employee profile)
     } finally { setLoading(false) }
   }
   useEffect(() => { load() }, [])
@@ -253,46 +258,34 @@ export function TimePage() {
     setBusy(true); setError("")
     try {
       const fd = new FormData()
-
       if (path.includes("clock-in") || path.includes("clock-out")) {
-        // Fresh GPS fix at the moment of punch
         let gps = currentGPS
         try {
           const fresh = await getPosition((acc) => setGpsAccuracy(acc))
           gps = fresh; setCurrentGPS(fresh); setGpsAccuracy(fresh.accuracy)
-          if (!resolvedAddr || Math.abs(fresh.lat - (currentGPS?.lat ?? 0)) > 0.0005) {
-            const addr = await getAddress(fresh.lat, fresh.lon)
-            if (addr) setResolvedAddr(addr)
-          }
+          const addr = await getAddress(fresh.lat, fresh.lon)
+          if (addr) setResolvedAddr(addr)
         } catch (gpsErr) { console.warn("[Clock] GPS refresh failed:", gpsErr) }
 
-        if (gps)         { fd.append("lat", gps.lat); fd.append("lon", gps.lon) }
-        if (resolvedAddr)  fd.append("address", resolvedAddr)
-        if (sessionNotes)  fd.append("notes",   sessionNotes)
-        if (selfieFile)    fd.append("photo",   selfieFile)         // selfie as clock-in photo
-        else if (sessionPhoto) fd.append("photo", sessionPhoto)     // or manual attachment
+        if (gps)          { fd.append("lat", gps.lat); fd.append("lon", gps.lon) }
+        if (resolvedAddr)   fd.append("address", resolvedAddr)
+        if (sessionNotes)   fd.append("notes",   sessionNotes)
+        if (selfieFile)     fd.append("photo",   selfieFile)
+        else if (sessionPhoto) fd.append("photo", sessionPhoto)
       }
 
       await apiRequest(path, { method: "POST", body: fd })
-      // Reset form
       setSessionNotes(""); setSessionPhoto(null); setSelfieFile(null); setSelfiePreview(null)
       await load()
     } catch (err) {
-      const msg =
-        err?.body?.detail ||
-        (err?.body && typeof err.body === "object"
-          ? Object.entries(err.body).map(([k, v]) => `${k}: ${v}`).join("; ")
-          : "") || "Action failed."
-      setError(msg)
+      setError("Action failed. Please try again.")
     } finally { setBusy(false) }
   }
 
-  // ── Render ────────────────────────────────────────────────────
   const today = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })
 
   return (
     <>
-      {/* Selfie modal */}
       {showSelfie && (
         <SelfieCapture
           onCapture={(file, preview) => { setSelfieFile(file); setSelfiePreview(preview); setShowSelfie(false) }}
@@ -300,304 +293,224 @@ export function TimePage() {
         />
       )}
 
-      <div className="stackLg">
-        {/* Page header */}
-        <div className="pageHeader">
+      <div className="tp-layout">
+        {/* ── Page Header ── */}
+        <div className="tp-header">
           <div>
-            <h1 className="pageTitle">Time Tracker</h1>
-            <div className="pageSub">Secure clock-in &amp; clock-out with location and selfie verification</div>
+            <h1 className="tp-title">Time Tracker</h1>
+            <div className="tp-secure">
+              <CheckCircle2 size={13} /> Secure Verification
+            </div>
           </div>
-          <div className="pageSub">{today}</div>
+          <div className="tp-date">{today}</div>
         </div>
 
-        {error && <div className="errorBox">{error}</div>}
+        {error && <div className="tp-error">{error}</div>}
 
-        {/* ── Punch card ── */}
-        <div className="punchCard">
-
-          {/* ── Selfie corner preview (appears after capture) ── */}
-          {selfiePreview && (
-            <div className="selfieCorner" title="Captured selfie — click to retake" onClick={() => setShowSelfie(true)}>
-              <img src={selfiePreview} alt="Selfie" />
-              <span className="selfieCornerBadge">✓</span>
-            </div>
-          )}
-
-          {/* Status bar */}
-          <div className="punchStatus">
-            <div className="punchStatusLeft">
-              {openLog ? (
-                <div className="row" style={{ gap: 8 }}>
-                  <span className="punchDot punchDotGreen" />
-                  <span className="punchStatusLabel">Clocked In</span>
-                  {openBreak && <Pill tone="warn">On break</Pill>}
-                </div>
-              ) : (
-                <div className="row" style={{ gap: 8 }}>
-                  <span className="punchDot punchDotRed" />
-                  <span className="punchStatusLabel">Not Clocked In</span>
-                </div>
-              )}
-            </div>
-            {openLog && (
-              <div className="punchShiftMeta">
-                <span className="metricLabel">Shift started</span>
-                <span style={{ fontWeight: 600, fontSize: 13 }}>{formatDateTime(openLog.clock_in)}</span>
+        {/* ── Status Card ── */}
+        <div className="tp-card tp-status-card">
+          <div className="tp-status-row">
+            {/* Left: clock status */}
+            <div className="tp-status-left">
+              <span className={`tp-dot ${openLog ? "tp-dot--green" : "tp-dot--red"}`} />
+              <div>
+                <div className="tp-status-label">{openLog ? "Clocked In" : "Not Clocked In"}</div>
+                <div className="tp-status-sub">{openLog ? "Logged duty active" : "Your shift hasn't started yet"}</div>
               </div>
-            )}
-          </div>
-
-          {/* Location strip */}
-          <div className="punchLocation">
-            <div className="punchLocIcon">📍</div>
-            <div className="punchLocBody">
-              <div className="punchLocTitle">{resolvedAddr || (gpsAccuracy != null ? "Resolving address…" : "Locating…")}</div>
-              {currentGPS && (
-                <div className="punchLocCoords">{currentGPS.lat.toFixed(6)}, {currentGPS.lon.toFixed(6)}</div>
-              )}
             </div>
-            {gpsAccuracy != null && (
-              <div className={`accuracyBadge ${gpsAccuracy <= TARGET_ACCURACY_M ? "accuracyGood" : "accuracyWait"}`}>
-                {gpsAccuracy <= TARGET_ACCURACY_M ? `✓ ±${gpsAccuracy}m` : `⟳ ±${gpsAccuracy}m`}
-              </div>
-            )}
-          </div>
 
-          {/* Form body */}
-          <div className="punchBody">
-            {loading ? (
-              <div className="muted" style={{ padding: "32px 0", textAlign: "center" }}>Loading…</div>
-            ) : openLog ? (
-              /* ── CLOCKED IN VIEW ── */
-              <div className="stack">
-                {openLog.breaks != null && (
-                  <div className="punchStats">
-                    <div className="punchStatItem">
-                      <div className="metricLabel">Shift Start</div>
-                      <div className="metricValueSmall">{formatDateTime(openLog.clock_in)}</div>
-                    </div>
-                    <div className="punchStatItem">
-                      <div className="metricLabel">Breaks</div>
-                      <div className="metricValueSmall">{openLog.breaks.length} session{openLog.breaks.length !== 1 ? "s" : ""}</div>
-                    </div>
-                  </div>
+            {/* Center: location */}
+            <div className="tp-status-loc">
+              <MapPin size={14} color="#9CA3AF" />
+              <div>
+                <div className="tp-loc-name">{resolvedAddr || "Waiting for GPS…"}</div>
+                {currentGPS && (
+                  <div className="tp-loc-coords">{currentGPS.lat.toFixed(6)}, {currentGPS.lon.toFixed(6)}</div>
                 )}
+              </div>
+            </div>
 
-                {/* Notes on clock-out */}
-                <div className="punchField">
-                  <label className="punchFieldLabel">Shift Summary / Notes</label>
-                  <textarea
-                    className="input textarea"
-                    placeholder="Describe what you worked on today…"
-                    value={sessionNotes}
-                    onChange={(e) => setSessionNotes(e.target.value)}
-                    rows={2}
-                  />
+            {/* Right: GPS accuracy */}
+            <div className="tp-accuracy">
+              <AlertCircle size={12} />
+              ±{gpsAccuracy || 0}m
+            </div>
+          </div>
+        </div>
+
+        {/* ── Action Card ── */}
+        <div className="tp-card tp-action-card">
+          {loading ? (
+            <div className="tp-loading"><Loader2 className="spin" size={20} /> Synchronizing…</div>
+          ) : openLog ? (
+            /* ── CLOCKED IN VIEW ── */
+            <div className="tp-form">
+              <div className="tp-clocked-meta">
+                <div className="tp-meta-item">
+                  <div className="tp-meta-label">SHIFT STARTED</div>
+                  <div className="tp-meta-value">{formatDateTime(openLog.clock_in).split(',')[1]}</div>
                 </div>
-
-                <div className="punchActions">
-                  {!openBreak ? (
-                    <Button variant="ghost" disabled={busy} onClick={() => action("/time/break/start/")}>
-                      ☕ Start Break
-                    </Button>
-                  ) : (
-                    <Button variant="ghost" disabled={busy} onClick={() => action("/time/break/end/")}>
-                      ▶ Resume Work
-                    </Button>
-                  )}
-                  <Button variant="danger" disabled={busy} onClick={() => action("/time/clock-out/")}>
-                    {busy ? "Processing…" : "🔴 Clock Out"}
-                  </Button>
+                <div className="tp-meta-item">
+                  <div className="tp-meta-label">BREAKS TAKEN</div>
+                  <div className="tp-meta-value">{openLog.breaks?.length || 0} Sessions</div>
                 </div>
               </div>
 
-            ) : (
-              /* ── CLOCK IN VIEW ── */
-              <div className="stack">
-                {/* Selfie row */}
-                <div className="punchSelfieRow">
-                  <div className="punchSelfieLabel">
-                    <span className="punchSelfieIcon">🤳</span>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: 13, color: "var(--fg)" }}>Capture Selfie</div>
-                      <div style={{ fontSize: 11.5, color: "var(--muted)" }}>Required for verification</div>
-                    </div>
-                  </div>
-                  <div className="punchSelfieRight">
-                    {selfiePreview ? (
-                      <button className="punchSelfieRetakeChip" onClick={() => setShowSelfie(true)} type="button">
-                        🔄 Retake
-                      </button>
-                    ) : (
-                      <button className="punchSelfieBtn" onClick={() => setShowSelfie(true)} type="button">
-                        Open Camera
-                      </button>
-                    )}
-                  </div>
-                </div>
+              <div className="tp-field">
+                <label className="tp-field-label"><Clock size={13} /> Current Task Summary</label>
+                <textarea
+                  className="tp-textarea"
+                  placeholder="Enter what you have accomplished so far…"
+                  value={sessionNotes}
+                  onChange={(e) => setSessionNotes(e.target.value)}
+                  rows={3}
+                />
+              </div>
 
-                {/* Notes */}
-                <div className="punchField">
-                  <label className="punchFieldLabel">What are you working on?</label>
-                  <textarea
-                    className="input textarea"
-                    placeholder="Enter today's task or project details…"
-                    value={sessionNotes}
-                    onChange={(e) => setSessionNotes(e.target.value)}
-                    rows={2}
-                  />
-                </div>
-
-                {/* Photo attachment (optional) */}
-                <div className="punchField">
-                  <label className="punchFieldLabel">
-                    Photo Attachment
-                    <span className="punchOptional">&#33; optional</span>
-                  </label>
-                  <label className="punchFileLabel">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => setSessionPhoto(e.target.files[0])}
-                      style={{ display: "none" }}
-                    />
-                    <span className="punchFileInner">
-                      <span>📎</span>
-                      <span>{sessionPhoto ? sessionPhoto.name : "Choose a file…"}</span>
-                    </span>
-                  </label>
-                </div>
-
-                {/* Clock In */}
-                <div className="punchActions">
-                  <button
-                    className="punchClockInBtn"
-                    disabled={busy || !resolvedAddr}
-                    onClick={() => action("/time/clock-in/")}
-                    type="button"
-                  >
-                    {busy ? "Clocking in…" : "▶  Clock In"}
+              <div className="tp-actions">
+                {!openBreak ? (
+                  <button className="tp-btn tp-btn--secondary" onClick={() => action("/time/break/start/")}>
+                    <Coffee size={16} /> Take Break
                   </button>
-                </div>
-
-                {!resolvedAddr && (
-                  <div className="punchGpsHint">⏳ Waiting for GPS lock before clock-in is enabled…</div>
+                ) : (
+                  <button className="tp-btn tp-btn--warning" onClick={() => action("/time/break/end/")}>
+                    <Play size={16} /> Resume Work
+                  </button>
                 )}
+                <button className="tp-btn tp-btn--danger" onClick={() => action("/time/clock-out/")}>
+                  <Square size={16} fill="currentColor" /> Clock Out
+                </button>
               </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            /* ── CLOCK IN VIEW ── */
+            <div className="tp-form">
+              {/* Selfie row */}
+              <div className="tp-selfie-row" onClick={() => setShowSelfie(true)}>
+                <div className="tp-selfie-left">
+                  <div className="tp-cam-icon">
+                    {selfiePreview
+                      ? <img src={selfiePreview} alt="selfie" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 10 }} />
+                      : <Camera size={22} color="#6366F1" />}
+                  </div>
+                  <div>
+                    <div className="tp-selfie-title">Capture Selfie</div>
+                    <div className="tp-selfie-sub">Required for clock-in verification</div>
+                  </div>
+                </div>
+                <button
+                  className="tp-open-camera-btn"
+                  onClick={(e) => { e.stopPropagation(); setShowSelfie(true) }}
+                >
+                  <Camera size={13} />
+                  {selfiePreview ? "Retake Selfie" : "Open Camera"}
+                </button>
+              </div>
+
+              {/* Task notes */}
+              <div className="tp-field">
+                <label className="tp-field-label"><Edit3 size={13} /> What are you working on?</label>
+                <textarea
+                  className="tp-textarea"
+                  placeholder="Enter today's task or project details…"
+                  value={sessionNotes}
+                  onChange={(e) => setSessionNotes(e.target.value)}
+                  rows={4}
+                />
+              </div>
+
+              {/* Photo attachment */}
+              <div className="tp-attach-wrap">
+                <div className="tp-attach-label">
+                  <span>Photo Attachment</span>
+                  <span className="tp-optional-badge">OPTIONAL</span>
+                </div>
+                <div
+                  className="tp-attach-box"
+                  onClick={() => document.getElementById("tp-file-input").click()}
+                >
+                  <input
+                    id="tp-file-input"
+                    type="file"
+                    style={{ display: "none" }}
+                    onChange={(e) => setSessionPhoto(e.target.files[0])}
+                  />
+                  <Paperclip size={16} color="#9CA3AF" />
+                  <span>{sessionPhoto ? sessionPhoto.name : "Click to choose a file, or drag and drop"}</span>
+                </div>
+              </div>
+
+              {/* Clock In button */}
+              <button
+                className="tp-clock-in-btn"
+                disabled={busy || !resolvedAddr}
+                onClick={() => action("/time/clock-in/")}
+              >
+                {busy ? <Loader2 className="spin" size={18} /> : "Clock In"}
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* ── Accordion: Recent Logs ── */}
-        <Accordion
-          title="Recent Logs"
-          badge={logs.length ? `${logs.length} entries` : null}
-        >
-          {loading ? (
-            <div className="muted">Loading…</div>
-          ) : logs.length ? (
-            <div className="table">
-              <div className="tableRow tableHead">
-                <div>Date</div>
-                <div>Clock In</div>
-                <div>Clock Out</div>
-                <div className="right">Hours</div>
-              </div>
-              {logs.slice(0, 10).map((l) => (
-                <div key={l.id} className="tableRow">
-                  <div style={{ fontWeight: 500 }}>{l.work_date}</div>
-                  <div>
-                    <div className="stackTight">
-                      <div className="rowTight">
-                        <span>{formatDateTime(l.clock_in)}</span>
-                        {l.clock_in_photo && (
-                          <a href={l.clock_in_photo} target="_blank" rel="noreferrer" className="thumb">📸</a>
-                        )}
-                      </div>
-                      {l.clock_in_address && <span className="addressText">{l.clock_in_address}</span>}
-                      {l.clock_in_notes   && <div className="noteQuote">{l.clock_in_notes}</div>}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="stackTight">
-                      <div className="rowTight">
-                        <span>{l.clock_out ? formatDateTime(l.clock_out) : <span className="muted">—</span>}</span>
-                        {l.clock_out_photo && (
-                          <a href={l.clock_out_photo} target="_blank" rel="noreferrer" className="thumb">📸</a>
-                        )}
-                      </div>
-                      {l.clock_out_address && <span className="addressText">{l.clock_out_address}</span>}
-                    </div>
-                  </div>
-                  <div className="right">
-                    <div className="stackTight alignEnd">
-                      <span style={{ fontWeight: 600 }}>{l.worked_hours}h</span>
-                      <div className="row" style={{ gap: 4, justifyContent: "flex-end" }}>
-                        {l.clock_in_lat && l.clock_in_lon && (
-                          <a href={buildMapUrl(l.clock_in_lat, l.clock_in_lon)} target="_blank" rel="noreferrer"
-                            className="mapLinkSmall" title="Clock-in location">📍 In</a>
-                        )}
-                        {l.clock_out_lat && l.clock_out_lon && (
-                          <a href={buildMapUrl(l.clock_out_lat, l.clock_out_lon)} target="_blank" rel="noreferrer"
-                            className="mapLinkSmall" title="Clock-out location">📍 Out</a>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+        {/* ── Recent Logs ── */}
+        <div className="tp-logs">
+          <div className="tp-logs-header">
+            <h2 className="tp-logs-title">Recent Logs</h2>
+            <div className="tp-logs-meta">
+              <span className="tp-logs-badge">{logs.length} entries</span>
+              <button
+                className="tp-logs-chevron"
+                onClick={() => setLogsOpen(v => !v)}
+                aria-label="toggle logs"
+              >
+                <ChevronUp size={16} style={{ transform: logsOpen ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.2s" }} />
+              </button>
             </div>
-          ) : (
-            <div className="muted">No logs yet.</div>
-          )}
-        </Accordion>
+          </div>
 
-        {/* ── Accordion: Last 7 Days ── */}
-        <Accordion
-          title="Last 7 Days Summary"
-          badge={timesheet ? `${timesheet.totals?.hours}h total` : null}
-        >
-          {loading ? (
-            <div className="muted">Loading…</div>
-          ) : timesheet ? (
-            <div className="stack">
-              {/* Summary stats */}
-              <div className="grid3" style={{ gap: 10 }}>
-                <div className="miniMetric">
-                  <div className="miniValue">{timesheet.totals?.hours}h</div>
-                  <div className="miniLabel">Total Hours</div>
-                </div>
-                <div className="miniMetric">
-                  <div className="miniValue" style={{ color: "var(--warn)" }}>{timesheet.totals?.daily_overtime_hours}h</div>
-                  <div className="miniLabel">Daily OT</div>
-                </div>
-                <div className="miniMetric">
-                  <div className="miniValue" style={{ color: "var(--bad)" }}>{timesheet.totals?.weekly_overtime_hours}h</div>
-                  <div className="miniLabel">Weekly OT</div>
-                </div>
-              </div>
-              {/* Daily breakdown */}
-              <div className="table">
-                <div className="tableRow tableHead">
-                  <div>Date</div>
-                  <div className="right">Hours</div>
-                  <div className="right">Overtime</div>
-                </div>
-                {(timesheet.daily ?? []).map((d) => (
-                  <div key={d.date} className="tableRow">
-                    <div>{d.date}</div>
-                    <div className="right" style={{ fontWeight: 500 }}>{d.hours}h</div>
-                    <div className="right" style={{ color: d.overtime_hours > 0 ? "var(--warn)" : "var(--muted)" }}>
-                      {d.overtime_hours > 0 ? `+${d.overtime_hours}h` : "—"}
-                    </div>
-                  </div>
-                ))}
-              </div>
+          {logsOpen && (
+            <div className="tp-table-wrap">
+              <table className="tp-table">
+                <thead>
+                  <tr>
+                    <th>DATE</th>
+                    <th>CLOCK IN</th>
+                    <th>CLOCK OUT</th>
+                    <th className="right">HOURS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.slice(0, 10).map((l) => (
+                    <tr key={l.id}>
+                      <td className="tp-td-date">{l.work_date}</td>
+                      <td>
+                        <div className="tp-time-cell">
+                          <span>{formatDateTime(l.clock_in).split(',')[1]?.trim()}</span>
+                          {l.clock_in_photo && (
+                            <span className="tp-photo-chip"><Camera size={10} /></span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        {l.clock_out
+                          ? <span>{formatDateTime(l.clock_out).split(',')[1]?.trim()}</span>
+                          : <span className="tp-pending">Pending</span>}
+                      </td>
+                      <td className="right">
+                        <span className="tp-hours-pill">{formatDuration(l.worked_seconds)}</span>
+                      </td>
+                    </tr>
+                  ))}
+                  {logs.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="tp-empty">No logs yet</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
-          ) : (
-            <div className="muted">No timesheet data.</div>
           )}
-        </Accordion>
+        </div>
       </div>
     </>
   )

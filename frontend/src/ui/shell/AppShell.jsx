@@ -7,7 +7,8 @@ import { routes } from "../routes.js"
 import { ThemeToggle } from "./ThemeToggle.jsx"
 import { CommandPalette } from "./CommandPalette.jsx"
 import { NotificationCenter } from "./NotificationCenter.jsx"
-import logo from "../../assets/logo.png"
+import logoDark from "../../assets/logo.png"
+import logoWhite from "../../assets/logo_white.png"
 
 import {
   Home,
@@ -22,7 +23,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Settings,
-  Search
+  Search,
+  ChevronDown
 } from "lucide-react"
 
 const NAV = [
@@ -37,6 +39,25 @@ const NAV = [
   { label: "Reports", to: routes.reports, icon: <BarChart3 size={18} strokeWidth={2.5} />, adminOnly: true },
   { label: "Settings", to: routes.settings, icon: <Settings size={18} strokeWidth={2.5} /> },
 ]
+
+function TopbarClock() {
+  const [now, setNow] = useState(new Date())
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(t)
+  }, [])
+  
+  const formattedTime = now.toLocaleTimeString([], { hour12: true, hour: 'numeric', minute: '2-digit' })
+  const formattedDate = now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
+  
+  return (
+    <div className="topbarWidget clockWidget">
+      <Clock size={14} className="widgetIcon" />
+      <span className="clockTime">{formattedTime}</span>
+      <span className="clockDate">{formattedDate}</span>
+    </div>
+  )
+}
 
 export function AppShell() {
   const { user, logout } = useAuth()
@@ -58,71 +79,60 @@ export function AppShell() {
       <CommandPalette open={cmdOpen} setOpen={setCmdOpen} />
       {/* ── Topbar ───────────────────────────── */}
       <header className="topbar">
-        <div className="brand" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <svg className="qtHourglass" width="36" height="36" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <defs>
-              <linearGradient id="qtHgBg" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stopColor="#4F46E5" />
-                <stop offset="100%" stopColor="#7C3AED" />
-              </linearGradient>
-            </defs>
-            <rect width="44" height="44" rx="12" fill="url(#qtHgBg)" />
-            <rect x="11" y="10" width="22" height="3" rx="1.5" fill="white" />
-            <rect x="11" y="31" width="22" height="3" rx="1.5" fill="white" />
-            <path className="qtHourglassTop" d="M12 13 L32 13 L25 21.8 L19 21.8 Z" fill="rgba(255,255,255,0.92)" />
-            <path className="qtHourglassBottom" d="M12 31 L32 31 L25 22.2 L19 22.2 Z" fill="rgba(255,255,255,0.45)" />
-            <rect className="qtHourglassStream" x="21.25" y="21.5" width="1.5" height="2.5" rx="0.75" fill="rgba(255,255,255,0.95)" />
-            <circle className="qtHourglassDrop qtHourglassDrop1" cx="22" cy="24.5" r="1.15" fill="rgba(255,255,255,0.95)" />
-            <circle className="qtHourglassDrop qtHourglassDrop2" cx="22" cy="24.5" r="1.15" fill="rgba(255,255,255,0.95)" />
-            <circle className="qtHourglassDrop qtHourglassDrop3" cx="22" cy="24.5" r="1.15" fill="rgba(255,255,255,0.95)" />
-          </svg>
-          <img src={logo} alt="QuickTIMS" style={{ height: "36px", width: "auto", objectFit: "contain" }} />
+        {/* Left: Brand */}
+        <div className="topbarLeft">
+          <div className="brand">
+            <img src={logoDark} alt="QuickTIMS" className="brand-logo logo-light-mode" />
+            <img src={logoWhite} alt="QuickTIMS" className="brand-logo logo-dark-mode" />
+            <div className="brand-divider" />
+            <span className="brand-module">Enterprise ERP</span>
+          </div>
+        </div>
+
+        {/* Center: Search */}
+        <div className="topbarCenter">
           <button
             type="button"
-            className="btn btnGhost"
-            style={{ display: "flex", alignItems: "center", gap: 12, justifyContent: "space-between", minWidth: 320, padding: "6px 12px", background: "var(--surface2)", borderRadius: 8, color: "var(--muted)", fontSize: 13, border: "1px solid var(--stroke)" }}
+            className="topbar-search-btn"
             onClick={() => setCmdOpen(true)}
-            title="Search command palette"
+            title="Search command palette (⌘K)"
           >
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
-              <Search size={14} /> Search anything...
-            </span>
-            <span style={{ fontSize: 10, fontWeight: 800, background: "var(--surface)", padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5 }}>⌘K</span>
+            <Search size={15} className="searchIcon" />
+            <span className="searchText">Search everywhere...</span>
+            <span className="searchKbd">⌘K</span>
           </button>
         </div>
 
+        {/* Right: Actions & Profile */}
         <div className="topbarRight">
           {offline && (
-            <span className="badge badgeBase badgeWarn" title="Backend unreachable — showing demo data">
-              <span className="badgeDot"></span> Demo Mode
+            <span className="topbarBadge warnPulse" title="Backend unreachable — showing demo data">
+              <span className="pulseDot"></span> Demo Mode
             </span>
           )}
 
-          
+          <TopbarClock />
 
-          <NotificationCenter />
+          <div className="topbarActions">
+           <NotificationCenter />
+           <ThemeToggle />
+          </div>
+
 
           <div className="topbarDivider"></div>
 
-          {/* Clean User Profile Area */}
-          <div className="userProfileWrap">
-            <div className="userAvatar">
-              {user.username.charAt(0).toUpperCase()}
+          <button className="userProfilePill" onClick={logout} title="Click to log out">
+            <div className="userAvatarWrap">
+              <div className="userAvatar">
+                {user.username.charAt(0).toUpperCase()}
+              </div>
+              <div className="activeStatus"></div>
             </div>
             <div className="userInfoStack">
               <span className="userName">{user.username}</span>
               <span className="userRole">{user.role}</span>
             </div>
-          </div>
-
-          <ThemeToggle />
-
-          <button className="btn btnGhost" onClick={logout} type="button" title="Sign out" style={{ padding: "8px" }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" y1="12" x2="9" y2="12"></line>
-            </svg>
+            <ChevronDown size={14} className="userChevron" />
           </button>
         </div>
       </header>

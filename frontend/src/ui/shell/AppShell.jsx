@@ -118,6 +118,7 @@ export function AppShell() {
            <ThemeToggle />
           </div>
 
+
           <div className="topbarDivider"></div>
 
           <button className="userProfilePill" onClick={logout} title="Click to log out">

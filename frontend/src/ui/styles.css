@@ -8740,5 +8740,3 @@ html, body, #root, .app {
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)) !important;
   gap: 20px !important;
 }
-
-

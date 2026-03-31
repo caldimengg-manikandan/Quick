@@ -7,15 +7,16 @@ import { routes } from "../routes.js"
 import { ThemeToggle } from "./ThemeToggle.jsx"
 import { CommandPalette } from "./CommandPalette.jsx"
 import { NotificationCenter } from "./NotificationCenter.jsx"
+import logo from "../../assets/logo.png"
 
-import { 
-  Home, 
-  Clock, 
-  CheckSquare, 
-  CalendarDays, 
-  Banknote, 
-  CalendarRange, 
-  Users, 
+import {
+  Home,
+  Clock,
+  CheckSquare,
+  CalendarDays,
+  Banknote,
+  CalendarRange,
+  Users,
   BarChart3,
   MapPin,
   ChevronLeft,
@@ -25,16 +26,16 @@ import {
 } from "lucide-react"
 
 const NAV = [
-  { label: "Dashboard",  to: routes.dashboard,  icon: <Home size={18} strokeWidth={2.5} /> },
-  { label: "Locations",  to: routes.locations,  icon: <MapPin size={18} strokeWidth={2.5} /> },
-  { label: "Time",       to: routes.time,        icon: <Clock size={18} strokeWidth={2.5} /> },
-  { label: "Tasks",      to: routes.tasks,       icon: <CheckSquare size={18} strokeWidth={2.5} /> },
-  { label: "Leaves",     to: routes.leaves,      icon: <CalendarDays size={18} strokeWidth={2.5} /> },
-  { label: "Payroll",    to: routes.payroll,     icon: <Banknote size={18} strokeWidth={2.5} /> },
-  { label: "Scheduling", to: routes.scheduling,  icon: <CalendarRange size={18} strokeWidth={2.5} /> },
-  { label: "Employees",  to: routes.employees,   icon: <Users size={18} strokeWidth={2.5} />,  adminOnly: true },
-  { label: "Reports",    to: routes.reports,     icon: <BarChart3 size={18} strokeWidth={2.5} />,  adminOnly: true },
-  { label: "Settings",   to: routes.settings,    icon: <Settings size={18} strokeWidth={2.5} /> },
+  { label: "Dashboard", to: routes.dashboard, icon: <Home size={18} strokeWidth={2.5} /> },
+  { label: "Locations", to: routes.locations, icon: <MapPin size={18} strokeWidth={2.5} /> },
+  { label: "Time", to: routes.time, icon: <Clock size={18} strokeWidth={2.5} /> },
+  { label: "Tasks", to: routes.tasks, icon: <CheckSquare size={18} strokeWidth={2.5} /> },
+  { label: "Leaves", to: routes.leaves, icon: <CalendarDays size={18} strokeWidth={2.5} /> },
+  { label: "Payroll", to: routes.payroll, icon: <Banknote size={18} strokeWidth={2.5} /> },
+  { label: "Scheduling", to: routes.scheduling, icon: <CalendarRange size={18} strokeWidth={2.5} /> },
+  { label: "Employees", to: routes.employees, icon: <Users size={18} strokeWidth={2.5} />, adminOnly: true },
+  { label: "Reports", to: routes.reports, icon: <BarChart3 size={18} strokeWidth={2.5} />, adminOnly: true },
+  { label: "Settings", to: routes.settings, icon: <Settings size={18} strokeWidth={2.5} /> },
 ]
 
 function TopbarClock() {
@@ -55,7 +56,6 @@ export function AppShell() {
   const { user, logout } = useAuth()
   const location = useLocation()
   const [offline, setOffline] = useState(false)
-  const [collapsed, setCollapsed] = useState(true)
   const [cmdOpen, setCmdOpen] = useState(false)
 
   useEffect(() => {
@@ -68,16 +68,13 @@ export function AppShell() {
   const items = NAV.filter((i) => !i.adminOnly || user.role === "admin")
 
   return (
-    <div className={`app ${collapsed ? "app-collapsed" : ""}`}>
+    <div className="app">
       <CommandPalette open={cmdOpen} setOpen={setCmdOpen} />
       {/* ── Topbar ───────────────────────────── */}
       <header className="topbar">
         <div className="brand">
-          <div className="brandMark" />
-          <div className="brandText">
-            <div className="brandName">QuickTIMS</div>
-            <div className="brandTag">Enterprise</div>
-          </div>
+          <img src={logo} alt="QuickTIMS" style={{ height: "36px", width: "auto", objectFit: "contain" }} />
+          <div className="brandTag">Enterprise</div>
         </div>
 
         <div className="topbarRight">
@@ -89,14 +86,14 @@ export function AppShell() {
 
           <TopbarClock />
 
-          <button 
+          <button
             type="button"
-            className="btn btnGhost" 
+            className="btn btnGhost"
             style={{ display: "flex", alignItems: "center", gap: 12, padding: "6px 12px", background: "var(--surface2)", borderRadius: 8, color: "var(--muted)", fontSize: 13, border: "1px solid var(--stroke)" }}
             onClick={() => setCmdOpen(true)}
             title="Search command palette"
           >
-            <Search size={14} /> Search anything... 
+            <Search size={14} /> Search anything...
             <span style={{ fontSize: 10, fontWeight: 800, background: "var(--surface)", padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5 }}>⌘K</span>
           </button>
 
@@ -129,7 +126,7 @@ export function AppShell() {
 
       {/* ── Body ─────────────────────────────── */}
       <div className="layout">
-        <aside className="sidebar" onMouseEnter={() => setCollapsed(false)} onMouseLeave={() => setCollapsed(true)}>
+        <aside className="sidebar">
           <nav className="nav">
             {items.map((item) => (
               <NavLink
@@ -141,20 +138,12 @@ export function AppShell() {
                     .join(" ")
                 }
                 end={item.to === "/"}
-                title={collapsed ? item.label : undefined}
               >
                 <span className="navIcon">{item.icon}</span>
                 <span className="navLabel">{item.label}</span>
               </NavLink>
             ))}
           </nav>
-
-          <div className="sidebarFooter">
-            <button className="sidebarToggle" onClick={() => setCollapsed(!collapsed)} aria-label="Toggle Sidebar">
-              {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-              <span className="navLabel">Collapse</span>
-            </button>
-          </div>
         </aside>
 
         <main className="content">

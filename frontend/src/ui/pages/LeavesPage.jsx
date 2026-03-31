@@ -90,7 +90,7 @@ export function LeavesPage() {
   }
 
   return (
-    <div className="stackLg">
+    <div className="stackLg leaves-module">
       <div className="pageHeader">
         <div>
           <h1 className="pageTitle">Leaves</h1>
@@ -140,7 +140,7 @@ export function LeavesPage() {
             {items.map((i) => (
               <div key={i.id} className="tableRow">
                 <div>{i.id}</div>
-                {user?.role === "admin" && <div style={{fontWeight:600}}>{i.employee_name || "Unknown"}</div>}
+                {user?.role === "admin" && <div style={{ fontWeight: 600 }}>{i.employee_name || "Unknown"}</div>}
                 <div>{i.leave_type}</div>
                 <div>{i.start_date}</div>
                 <div>{i.end_date}</div>

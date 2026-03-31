@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Check, ArrowRight, Building2, Users2, Workflow, Clock, Banknote, CalendarDays, Sparkles } from "lucide-react"
+import logoWhite from "../../assets/logo_white.png"
 
 import { routes } from "../routes.js"
 
@@ -10,17 +11,17 @@ export function OnboardingPage() {
 
   // Step 1: Organization
   const [orgName, setOrgName] = useState("")
-  
+
   // Step 2: Modules
   const [modules, setModules] = useState(["time"]) // default selected
 
   return (
     <div style={{ display: "flex", width: "100vw", height: "100vh", overflow: "hidden", background: "var(--bg)" }}>
       {/* Left Pane: Branding & Motivation */}
-      <div style={{ 
-        flex: 1, 
-        background: "linear-gradient(135deg, #0e1116 0%, #1e1b4b 100%)", 
-        color: "#fff", 
+      <div style={{
+        flex: 1,
+        background: "linear-gradient(135deg, #0e1116 0%, #1e1b4b 100%)",
+        color: "#fff",
         padding: "64px",
         display: "flex",
         flexDirection: "column",
@@ -33,10 +34,7 @@ export function OnboardingPage() {
 
         <div style={{ zIndex: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 64 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 10, background: "#fff", color: "#000", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 900, fontFamily: "var(--font-display)" }}>
-              Q
-            </div>
-            <div style={{ fontSize: 20, fontWeight: 800, fontFamily: "var(--font-display)", letterSpacing: -0.5 }}>QuickTIMS</div>
+            <img src={logoWhite} alt="QuickTIMS" style={{ height: "40px", width: "auto", objectFit: "contain" }} />
           </div>
 
           <h1 style={{ fontSize: 48, fontWeight: 800, fontFamily: "var(--font-display)", letterSpacing: -1, lineHeight: 1.1, marginBottom: 24 }}>
@@ -51,8 +49,8 @@ export function OnboardingPage() {
         <div style={{ zIndex: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
             <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyItems: "center" }}>
-               {/* Tiny avatars grid purely for aesthetics */}
-               <Users2 size={24} color="#fff" style={{ margin: "auto" }} />
+              {/* Tiny avatars grid purely for aesthetics */}
+              <Users2 size={24} color="#fff" style={{ margin: "auto" }} />
             </div>
             <div>
               <div style={{ fontSize: 14, fontWeight: 800 }}>Join 10,000+ organizations</div>
@@ -63,21 +61,21 @@ export function OnboardingPage() {
       </div>
 
       {/* Right Pane: Wizard Form */}
-      <div style={{ 
-        flex: 1.3, 
-        background: "var(--surface)", 
-        display: "flex", 
+      <div style={{
+        flex: 1.3,
+        background: "var(--surface)",
+        display: "flex",
         flexDirection: "column",
-        padding: "64px" 
+        padding: "64px"
       }}>
         <div style={{ width: "100%", maxWidth: 500, margin: "auto" }}>
-          
+
           {/* Progress Indicators */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 48 }}>
             {[1, 2, 3].map(s => (
               <div key={s} style={{ display: "flex", alignItems: "center", gap: 12, flex: s !== 3 ? 1 : 0 }}>
-                <div style={{ 
-                  width: 32, height: 32, borderRadius: "50%", 
+                <div style={{
+                  width: 32, height: 32, borderRadius: "50%",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: 13, fontWeight: 800,
                   background: step > s ? "#059669" : step === s ? "#5d5fef" : "var(--bg)",
@@ -106,13 +104,13 @@ export function OnboardingPage() {
 
               <div className="field" style={{ marginBottom: 24 }}>
                 <label className="fieldLabel" style={{ fontSize: 11, letterSpacing: 1 }}>ORGANIZATION NAME</label>
-                <input 
-                  type="text" 
-                  className="input" 
-                  placeholder="e.g. Acme Corporation" 
-                  value={orgName} 
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="e.g. Acme Corporation"
+                  value={orgName}
                   onChange={e => setOrgName(e.target.value)}
-                  style={{ fontSize: 16, padding: "14px 16px", borderRadius: 12 }} 
+                  style={{ fontSize: 16, padding: "14px 16px", borderRadius: 12 }}
                 />
               </div>
 
@@ -126,8 +124,8 @@ export function OnboardingPage() {
                 </select>
               </div>
 
-              <button 
-                className="btn btnPrimary" 
+              <button
+                className="btn btnPrimary"
                 onClick={() => setStep(2)}
                 disabled={!orgName.trim()}
                 style={{ width: "100%", padding: 16, background: "#5d5fef", fontSize: 14, fontWeight: 800, borderRadius: 12, border: "none" }}
@@ -158,17 +156,17 @@ export function OnboardingPage() {
                 ].map(mod => {
                   const isSel = modules.includes(mod.id)
                   return (
-                    <div 
+                    <div
                       key={mod.id}
                       onClick={() => {
                         if (isSel) setModules(modules.filter(m => m !== mod.id))
                         else setModules([...modules, mod.id])
                       }}
-                      style={{ 
-                        border: isSel ? "2px solid #5d5fef" : "1px solid var(--stroke2)", 
+                      style={{
+                        border: isSel ? "2px solid #5d5fef" : "1px solid var(--stroke2)",
                         background: isSel ? "#eff0fe" : "var(--surface)",
-                        padding: "16px 20px", 
-                        borderRadius: 12, 
+                        padding: "16px 20px",
+                        borderRadius: 12,
                         display: "flex", alignItems: "center", gap: 16,
                         cursor: "pointer",
                         transition: "all 0.2s ease"
@@ -189,8 +187,8 @@ export function OnboardingPage() {
 
               <div style={{ display: "flex", gap: 16 }}>
                 <button className="btn btnGhost" onClick={() => setStep(1)} style={{ padding: 16, borderRadius: 12, fontSize: 14, fontWeight: 800 }}>BACK</button>
-                <button 
-                  className="btn btnPrimary" 
+                <button
+                  className="btn btnPrimary"
                   onClick={() => setStep(3)}
                   disabled={modules.length === 0}
                   style={{ flex: 1, padding: 16, background: "#5d5fef", fontSize: 14, fontWeight: 800, borderRadius: 12, border: "none" }}
@@ -219,13 +217,13 @@ export function OnboardingPage() {
                 <input type="email" className="input" placeholder="bob@example.com" style={{ fontSize: 15, padding: "14px 16px", borderRadius: 12 }} />
                 <input type="email" className="input" placeholder="charlie@example.com" style={{ fontSize: 15, padding: "14px 16px", borderRadius: 12 }} />
               </div>
-              
+
               <button className="btn btnGhost" style={{ fontSize: 13, fontWeight: 800, color: "#5d5fef", marginBottom: 32 }}>+ ADD MORE</button>
 
               <div style={{ display: "flex", gap: 16 }}>
                 <button className="btn btnGhost" onClick={() => navigate(routes.dashboard)} style={{ padding: 16, borderRadius: 12, fontSize: 14, fontWeight: 800 }}>SKIP FOR NOW</button>
-                <button 
-                  className="btn btnPrimary" 
+                <button
+                  className="btn btnPrimary"
                   onClick={() => navigate(routes.dashboard)}
                   style={{ flex: 1, padding: 16, background: "#059669", fontSize: 14, fontWeight: 800, borderRadius: 12, border: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
                 >

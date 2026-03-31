@@ -241,7 +241,7 @@ export function LoginPage() {
       <div className="qt-left-panel">
         {/* Logo */}
         <div className="qt-left-logo">
-          <img src={logo} alt="QuickTIMS" style={{ height: "42px", width: "auto", objectFit: "contain" }} />
+          <img src={logo} alt="QuickTIMS" style={{ height: "60px", width: "auto", objectFit: "contain" }} />
         </div>
 
         {/* Hero illustration area */}

@@ -90,3 +90,22 @@ class Task(models.Model):
         end = self.completed_at or timezone.now()
         delta = end - self.started_at
         return round(delta.total_seconds() / 3600, 2)
+
+
+class TaskAttachment(models.Model):
+    id = ObjectIdAutoField(primary_key=True)
+
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="attachments")
+    file = models.FileField(upload_to="tasks/attachments/")
+    original_name = models.CharField(max_length=255, blank=True)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="task_attachments",
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-uploaded_at"]

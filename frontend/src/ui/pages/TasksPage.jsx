@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { apiRequest, unwrapResults } from "../../api/client.js"
 import { useAuth } from "../../state/auth/useAuth.js"
 import { Pill } from "../components/kit.jsx"
-import { ClipboardList, Clock, CheckCircle2, AlertCircle, Plus, MapPin, AlignLeft, Calendar as CalIcon, Play, Save, Trash2, Tag, Loader2 } from "lucide-react"
+import { ClipboardList, Clock, CheckCircle2, AlertCircle, MapPin, Calendar as CalIcon, Play, Save, Trash2, Tag, Loader2, Paperclip, User, Flag, ListChecks, Plus, X } from "lucide-react"
 
 // ─── Constants & Helpers ─────────────────────────────────────
 const CATEGORIES = [
@@ -34,6 +34,7 @@ function priorityColor(p) { return PRIORITIES.find(x => x.value === p)?.color ??
 
 const EMPTY_FORM = {
   title: "", description: "", category: "other", priority: "medium",
+  status: "pending",
   assigned_to: "", due_date: new Date().toISOString().slice(0, 10),
   estimated_hours: "1", location: "", admin_notes: "",
 }
@@ -113,12 +114,33 @@ function TaskCard({ task, onAction, busy }) {
 }
 
 // ─── ADMIN: Assign Panel ─────────────────────────────────────
-function AssignTaskPanel({ employees, onAssigned }) {
+function AssignTaskPanel({ employees, onAssigned, onClose }) {
   const [form, setForm] = useState(EMPTY_FORM)
+  const [files, setFiles] = useState([])
+  const [dragging, setDragging] = useState(false)
+  const [showMore, setShowMore] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err,  setErr]  = useState("")
+  const fileInputRef = useRef(null)
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
+
+  function addFiles(list) {
+    const next = [...files, ...Array.from(list || [])]
+    const uniq = []
+    const seen = new Set()
+    for (const f of next) {
+      const key = `${f.name}:${f.size}:${f.lastModified}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      uniq.push(f)
+    }
+    setFiles(uniq)
+  }
+
+  function removeFile(idx) {
+    setFiles(xs => xs.filter((_, i) => i !== idx))
+  }
 
   async function submit(e) {
     e.preventDefault()
@@ -126,13 +148,20 @@ function AssignTaskPanel({ employees, onAssigned }) {
     if (!form.title.trim()) return setErr("Title is required.")
     setBusy(true); setErr("")
     try {
-      await apiRequest("/tasks/admin/", {
+      const created = await apiRequest("/tasks/admin/", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, estimated_hours: parseFloat(form.estimated_hours) || 1 }),
+        json: { ...form, estimated_hours: parseFloat(form.estimated_hours) || 1 },
       })
+      if (files.length) {
+        const fd = new FormData()
+        for (const f of files) fd.append("files", f)
+        await apiRequest(`/tasks/admin/${created.id}/attachments/`, { method: "POST", body: fd })
+      }
       setForm(EMPTY_FORM)
-      onAssigned()
+      setFiles([])
+      setShowMore(false)
+      await onAssigned?.()
+      onClose?.()
     } catch (ex) {
       setErr(ex?.body?.detail || "Failed to assign task.")
     } finally { setBusy(false) }
@@ -140,68 +169,122 @@ function AssignTaskPanel({ employees, onAssigned }) {
 
   return (
     <div className="tsk-panel">
-      <div className="tsk-panel-head">
-        <div style={{background:"#6366F1", color:"#fff", width:28, height:28, borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center"}}>
-          <Plus size={16}/>
-        </div>
-        <div className="tsk-panel-title">Assign New Task</div>
-      </div>
-      <form className="tsk-panel-body" onSubmit={submit}>
+      <form className="tsk-assign-body" onSubmit={submit}>
+        <div className="tsk-assign-meta">General</div>
+        <input className="tsk-assign-title" value={form.title} onChange={e => set("title", e.target.value)} placeholder="Untitled" />
+
         {err && <div style={{color:"#DC2626", fontSize:13, fontWeight:600}}><AlertCircle size={14} style={{verticalAlign:"middle", marginRight:4}}/> {err}</div>}
 
-        <div>
-          <label className="tsk-label">Assign To *</label>
-          <select className="tsk-input tsk-select" value={form.assigned_to} onChange={e => set("assigned_to", e.target.value)} required>
-            <option value="">— Select employee —</option>
-            {employees.map(emp => (
-              <option key={emp.id} value={emp.user?.id}>{emp.user?.first_name || emp.user?.username} {emp.user?.last_name || ""}</option>
+        <div className="tsk-props">
+          <div className="tsk-prop-row">
+            <div className="tsk-prop-left"><User size={14}/> Assign To</div>
+            <div className="tsk-prop-right">
+              <select className="tsk-input tsk-select" value={form.assigned_to} onChange={e => set("assigned_to", e.target.value)} required>
+                <option value="">— Select employee —</option>
+                {employees.map(emp => (
+                  <option key={emp.id} value={emp.user?.id}>{emp.user?.first_name || emp.user?.username} {emp.user?.last_name || ""}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="tsk-prop-row">
+            <div className="tsk-prop-left"><Tag size={14}/> Label</div>
+            <div className="tsk-prop-right">
+              <select className="tsk-input tsk-select" value={form.category} onChange={e => set("category", e.target.value)}>
+                {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="tsk-prop-row">
+            <div className="tsk-prop-left"><CalIcon size={14}/> Due Date</div>
+            <div className="tsk-prop-right">
+              <input className="tsk-input" type="date" value={form.due_date} onChange={e => set("due_date", e.target.value)} />
+            </div>
+          </div>
+
+          <div className="tsk-prop-row">
+            <div className="tsk-prop-left"><Flag size={14}/> Priority</div>
+            <div className="tsk-prop-right">
+              <select className="tsk-input tsk-select" value={form.priority} onChange={e => set("priority", e.target.value)}>
+                {PRIORITIES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="tsk-prop-row">
+            <div className="tsk-prop-left"><ListChecks size={14}/> Status</div>
+            <div className="tsk-prop-right">
+              <select className="tsk-input tsk-select" value={form.status} onChange={e => set("status", e.target.value)}>
+                {STATUS_FILTERS.filter(x => x !== "all").map(s => (
+                  <option key={s} value={s}>{statusLabel(s)}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" className="tsk-prop-more" onClick={() => setShowMore(v => !v)}>
+          + Add more properties
+        </button>
+
+        {showMore && (
+          <div className="tsk-props" style={{marginTop:0}}>
+            <div className="tsk-prop-row">
+              <div className="tsk-prop-left"><Clock size={14}/> Est. Hours</div>
+              <div className="tsk-prop-right">
+                <input className="tsk-input" type="number" min="0.5" step="0.5" value={form.estimated_hours} onChange={e => set("estimated_hours", e.target.value)} />
+              </div>
+            </div>
+            <div className="tsk-prop-row">
+              <div className="tsk-prop-left"><MapPin size={14}/> Location</div>
+              <div className="tsk-prop-right">
+                <input className="tsk-input" value={form.location} onChange={e => set("location", e.target.value)} placeholder="e.g. Building A, Floor 2" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="tsk-form-divider" />
+
+        <div className="tsk-section-title">ATTACHMENTS</div>
+        <div
+          className={`tsk-dropzone ${dragging ? "dragging" : ""}`}
+          onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => { e.preventDefault(); setDragging(false); addFiles(e.dataTransfer.files) }}
+        >
+          <div className="tsk-dropzone-inner">
+            <div className="tsk-dropzone-label">Drag & drop your files here</div>
+            <div className="tsk-dropzone-or">OR</div>
+            <button type="button" className="tsk-btn tsk-btn-outline" onClick={() => fileInputRef.current?.click()}>
+              <Paperclip size={15}/> Browse files
+            </button>
+            <input ref={fileInputRef} type="file" multiple style={{display:"none"}} onChange={(e) => addFiles(e.target.files)} />
+          </div>
+        </div>
+
+        {files.length > 0 && (
+          <div className="tsk-file-list">
+            {files.map((f, idx) => (
+              <div key={`${f.name}:${f.size}:${f.lastModified}`} className="tsk-file-item">
+                <div className="tsk-file-name">{f.name}</div>
+                <button type="button" className="tsk-file-remove" onClick={() => removeFile(idx)}>Remove</button>
+              </div>
             ))}
-          </select>
-        </div>
-
-        <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:16}}>
-          <div>
-            <label className="tsk-label">Category</label>
-            <select className="tsk-input tsk-select" value={form.category} onChange={e => set("category", e.target.value)}>
-              {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-            </select>
           </div>
-          <div>
-            <label className="tsk-label">Priority</label>
-            <select className="tsk-input tsk-select" value={form.priority} onChange={e => set("priority", e.target.value)}>
-              {PRIORITIES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-            </select>
-          </div>
-        </div>
+        )}
 
-        <div>
-          <label className="tsk-label">Task Title *</label>
-          <input className="tsk-input" value={form.title} onChange={e => set("title", e.target.value)} placeholder="e.g. Fix wiring in Room 204" required />
-        </div>
+        <div className="tsk-form-divider" />
 
-        <div>
-          <label className="tsk-label">Description</label>
-          <textarea className="tsk-input" rows={2} value={form.description} onChange={e => set("description", e.target.value)} placeholder="Detailed instructions..." />
-        </div>
+        <div className="tsk-section-title">DESCRIPTION</div>
+        <textarea className="tsk-input" rows={3} value={form.description} onChange={e => set("description", e.target.value)} placeholder="Add a more detailed description..." />
 
-        <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:16}}>
-          <div>
-            <label className="tsk-label">Due Date</label>
-            <input className="tsk-input" type="date" value={form.due_date} onChange={e => set("due_date", e.target.value)} />
-          </div>
-          <div>
-            <label className="tsk-label">Est. Hours</label>
-            <input className="tsk-input" type="number" min="0.5" step="0.5" value={form.estimated_hours} onChange={e => set("estimated_hours", e.target.value)} />
-          </div>
-        </div>
+        <input className="tsk-input" value={form.admin_notes} onChange={e => set("admin_notes", e.target.value)} placeholder="Add a comment..." />
 
-        <div>
-          <label className="tsk-label">Work Location</label>
-          <input className="tsk-input" value={form.location} onChange={e => set("location", e.target.value)} placeholder="e.g. Building A, Floor 2" />
-        </div>
-
-        <button type="submit" className="tsk-btn tsk-btn-primary" disabled={busy} style={{justifyContent:"center", marginTop:8}}>
-          {busy ? <Loader2 size={16} className="spin"/> : <CheckCircle2 size={16}/>} Assign Task
+        <button type="submit" className="tsk-btn tsk-btn-primary tsk-save-btn" disabled={busy}>
+          {busy ? <Loader2 size={16} className="spin"/> : <Save size={16}/>} Save
         </button>
       </form>
     </div>
@@ -272,17 +355,108 @@ function AdminTasksTable({ tasks, employees, onRefresh }) {
 
 // ─── ADMIN LAYOUT ────────────────────────────────────────────
 function AdminTasksPage({ tasks, employees, loadTasks }) {
+  const [open, setOpen] = useState(false)
+  const modalRef = useRef(null)
+  const [pos, setPos] = useState({ x: 24, y: 88 })
+  const dragRef = useRef({ dragging: false, dx: 0, dy: 0 })
+
+  useEffect(() => {
+    if (!open) return
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setOpen(false)
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    const w = window.innerWidth || 0
+    const h = window.innerHeight || 0
+    const rect = modalRef.current?.getBoundingClientRect()
+    const mw = rect?.width || 880
+    const mh = rect?.height || 520
+    setPos({
+      x: Math.max(16, Math.round((w - mw) / 2)),
+      y: Math.max(16, Math.round((h - mh) / 6)),
+    })
+  }, [open])
+
+  function startDrag(e) {
+    if (!open) return
+    dragRef.current.dragging = true
+    dragRef.current.dx = e.clientX - pos.x
+    dragRef.current.dy = e.clientY - pos.y
+    e.currentTarget.setPointerCapture?.(e.pointerId)
+  }
+
+  function moveDrag(e) {
+    if (!dragRef.current.dragging) return
+    const rect = modalRef.current?.getBoundingClientRect()
+    const mw = rect?.width || 880
+    const mh = rect?.height || 520
+    const w = window.innerWidth || 0
+    const h = window.innerHeight || 0
+    const x = e.clientX - dragRef.current.dx
+    const y = e.clientY - dragRef.current.dy
+    setPos({
+      x: Math.min(Math.max(16, x), Math.max(16, w - mw - 16)),
+      y: Math.min(Math.max(16, y), Math.max(16, h - mh - 16)),
+    })
+  }
+
+  function endDrag() {
+    dragRef.current.dragging = false
+  }
+
   return (
-    <div className="tsk-admin-grid">
-      <AssignTaskPanel employees={employees} onAssigned={loadTasks} />
-      <div style={{display:"flex", flexDirection:"column", gap:16}}>
-        <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-          <h2 style={{fontSize:18, fontWeight:700, margin:0}}>All System Tasks</h2>
-          <span style={{fontSize:13, fontWeight:600, color:"var(--muted)"}}>{tasks.length} Total</span>
+    <>
+      {open && (
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 9999, pointerEvents: "none" }}
+        >
+          <div
+            ref={modalRef}
+            style={{ position: "absolute", left: pos.x, top: pos.y, width: "min(880px, calc(100vw - 32px))", maxHeight: "calc(100vh - 32px)", overflow: "auto", background: "var(--surface)", borderRadius: 16, boxShadow: "0 20px 40px rgba(0,0,0,0.2), 0 0 0 1px var(--stroke)", pointerEvents: "auto" }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 18px", borderBottom: "1px solid var(--stroke)" }}>
+              <div
+                onPointerDown={startDrag}
+                onPointerMove={moveDrag}
+                onPointerUp={endDrag}
+                onPointerCancel={endDrag}
+                style={{ display: "flex", flexDirection: "column", flex: 1, cursor: "grab", userSelect: "none" }}
+              >
+                <div style={{ fontSize: 16, fontWeight: 800 }}>Add Task</div>
+                <div style={{ fontSize: 12.5, color: "var(--muted)", fontWeight: 600 }}>Fill the details and save to push into the task queue.</div>
+              </div>
+              <button type="button" className="tsk-btn tsk-btn-outline" onClick={() => setOpen(false)} aria-label="Close">
+                <X size={16} /> Close
+              </button>
+            </div>
+
+            <div style={{ padding: 14 }}>
+              <AssignTaskPanel employees={employees} onAssigned={loadTasks} onClose={() => setOpen(false)} />
+            </div>
+          </div>
         </div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Task Queue</h2>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--muted)" }}>{tasks.length} Total</span>
+          </div>
+
+          <button type="button" className="tsk-btn tsk-btn-primary" onClick={() => setOpen(true)}>
+            <Plus size={16} /> Add Task
+          </button>
+        </div>
+
         <AdminTasksTable tasks={tasks} employees={employees} onRefresh={loadTasks} />
       </div>
-    </div>
+    </>
   )
 }
 

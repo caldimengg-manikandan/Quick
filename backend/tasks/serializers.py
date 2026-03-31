@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from accounts.models import User
-from .models import Task
+from .models import Task, TaskAttachment
 
 
 class AssignedToSerializer(serializers.ModelSerializer):
@@ -27,6 +27,7 @@ class TaskSerializer(serializers.ModelSerializer):
     assigned_to_detail = AssignedToSerializer(source="assigned_to", read_only=True)
     assigned_by_name = serializers.SerializerMethodField()
     actual_hours = serializers.ReadOnlyField()
+    attachments = serializers.SerializerMethodField()
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
@@ -45,6 +46,7 @@ class TaskSerializer(serializers.ModelSerializer):
             "category",
             "priority",
             "status",
+            "attachments",
             "assigned_to",
             "assigned_to_detail",
             "assigned_by",
@@ -68,6 +70,33 @@ class TaskSerializer(serializers.ModelSerializer):
         if obj.assigned_by:
             return obj.assigned_by.get_full_name() or obj.assigned_by.username
         return ""
+
+    def get_attachments(self, obj):
+        qs = getattr(obj, "attachments", None)
+        if qs is None:
+            return []
+        return TaskAttachmentSerializer(qs.all(), many=True, context=self.context).data
+
+
+class TaskAttachmentSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
+    url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TaskAttachment
+        fields = ("id", "original_name", "url", "uploaded_at")
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        if ret.get("id"):
+            ret["id"] = str(ret["id"])
+        return ret
+
+    def get_url(self, obj):
+        try:
+            return obj.file.url if obj.file else ""
+        except Exception:
+            return ""
 
 
 class TaskStatusUpdateSerializer(serializers.ModelSerializer):

@@ -1,10 +1,11 @@
 from django.utils import timezone
 from rest_framework import status
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Task
+from .models import Task, TaskAttachment
 from .serializers import TaskSerializer, TaskStatusUpdateSerializer
 
 
@@ -81,6 +82,32 @@ class AdminTaskDetailView(APIView):
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         task.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class AdminTaskAttachmentCreateView(APIView):
+    permission_classes = [IsAdmin]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request, pk):
+        try:
+            task = Task.objects.get(pk=pk)
+        except Task.DoesNotExist:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        files = request.FILES.getlist("files") or request.FILES.getlist("file")
+        if not files:
+            return Response({"detail": "No files provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        for f in files:
+            TaskAttachment.objects.create(
+                task=task,
+                file=f,
+                original_name=getattr(f, "name", "") or "",
+                uploaded_by=request.user,
+            )
+
+        task = Task.objects.get(pk=pk)
+        return Response(TaskSerializer(task).data, status=status.HTTP_201_CREATED)
 
 
 # ── Employee: own tasks ───────────────────────────────────────

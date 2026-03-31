@@ -38,20 +38,6 @@ const NAV = [
   { label: "Settings", to: routes.settings, icon: <Settings size={18} strokeWidth={2.5} /> },
 ]
 
-function TopbarClock() {
-  const [now, setNow] = useState(new Date())
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000)
-    return () => clearInterval(t)
-  }, [])
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: "var(--fg2)", background: "var(--surface2)", padding: "4px 10px", borderRadius: 8, border: "1px solid var(--stroke)" }}>
-      <Clock size={14} opacity={0.6} />
-      {now.toLocaleTimeString([], { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-    </div>
-  )
-}
-
 export function AppShell() {
   const { user, logout } = useAuth()
   const location = useLocation()
@@ -72,9 +58,37 @@ export function AppShell() {
       <CommandPalette open={cmdOpen} setOpen={setCmdOpen} />
       {/* ── Topbar ───────────────────────────── */}
       <header className="topbar">
-        <div className="brand">
+        <div className="brand" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <svg className="qtHourglass" width="36" height="36" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs>
+              <linearGradient id="qtHgBg" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#4F46E5" />
+                <stop offset="100%" stopColor="#7C3AED" />
+              </linearGradient>
+            </defs>
+            <rect width="44" height="44" rx="12" fill="url(#qtHgBg)" />
+            <rect x="11" y="10" width="22" height="3" rx="1.5" fill="white" />
+            <rect x="11" y="31" width="22" height="3" rx="1.5" fill="white" />
+            <path className="qtHourglassTop" d="M12 13 L32 13 L25 21.8 L19 21.8 Z" fill="rgba(255,255,255,0.92)" />
+            <path className="qtHourglassBottom" d="M12 31 L32 31 L25 22.2 L19 22.2 Z" fill="rgba(255,255,255,0.45)" />
+            <rect className="qtHourglassStream" x="21.25" y="21.5" width="1.5" height="2.5" rx="0.75" fill="rgba(255,255,255,0.95)" />
+            <circle className="qtHourglassDrop qtHourglassDrop1" cx="22" cy="24.5" r="1.15" fill="rgba(255,255,255,0.95)" />
+            <circle className="qtHourglassDrop qtHourglassDrop2" cx="22" cy="24.5" r="1.15" fill="rgba(255,255,255,0.95)" />
+            <circle className="qtHourglassDrop qtHourglassDrop3" cx="22" cy="24.5" r="1.15" fill="rgba(255,255,255,0.95)" />
+          </svg>
           <img src={logo} alt="QuickTIMS" style={{ height: "36px", width: "auto", objectFit: "contain" }} />
-          <div className="brandTag">Enterprise</div>
+          <button
+            type="button"
+            className="btn btnGhost"
+            style={{ display: "flex", alignItems: "center", gap: 12, justifyContent: "space-between", minWidth: 320, padding: "6px 12px", background: "var(--surface2)", borderRadius: 8, color: "var(--muted)", fontSize: 13, border: "1px solid var(--stroke)" }}
+            onClick={() => setCmdOpen(true)}
+            title="Search command palette"
+          >
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+              <Search size={14} /> Search anything...
+            </span>
+            <span style={{ fontSize: 10, fontWeight: 800, background: "var(--surface)", padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5 }}>⌘K</span>
+          </button>
         </div>
 
         <div className="topbarRight">
@@ -84,18 +98,7 @@ export function AppShell() {
             </span>
           )}
 
-          <TopbarClock />
-
-          <button
-            type="button"
-            className="btn btnGhost"
-            style={{ display: "flex", alignItems: "center", gap: 12, padding: "6px 12px", background: "var(--surface2)", borderRadius: 8, color: "var(--muted)", fontSize: 13, border: "1px solid var(--stroke)" }}
-            onClick={() => setCmdOpen(true)}
-            title="Search command palette"
-          >
-            <Search size={14} /> Search anything...
-            <span style={{ fontSize: 10, fontWeight: 800, background: "var(--surface)", padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5 }}>⌘K</span>
-          </button>
+          
 
           <NotificationCenter />
 

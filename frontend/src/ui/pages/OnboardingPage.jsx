@@ -34,7 +34,7 @@ export function OnboardingPage() {
 
         <div style={{ zIndex: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 64 }}>
-            <img src={logoWhite} alt="QuickTIMS" style={{ height: "40px", width: "auto", objectFit: "contain" }} />
+            <img src={logoWhite} alt="QuickTIMS" style={{ height: "56px", width: "auto", objectFit: "contain" }} />
           </div>
 
           <h1 style={{ fontSize: 48, fontWeight: 800, fontFamily: "var(--font-display)", letterSpacing: -1, lineHeight: 1.1, marginBottom: 24 }}>

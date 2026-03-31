@@ -13,6 +13,8 @@ import { ReportsPage }    from "./pages/ReportsPage.jsx"
 import { SchedulingPage } from "./pages/SchedulingPage.jsx"
 import { TasksPage }      from "./pages/TasksPage.jsx"
 import { TimePage }       from "./pages/TimePage.jsx"
+import { SettingsPage }   from "./pages/SettingsPage.jsx"
+import { OnboardingPage } from "./pages/OnboardingPage.jsx"
 
 export function App() {
   const { isReady, user } = useAuth()
@@ -22,6 +24,7 @@ export function App() {
   return (
     <Routes>
       <Route path={routes.login} element={user ? <Navigate to={routes.dashboard} replace /> : <LoginPage />} />
+      <Route path={routes.onboarding} element={<OnboardingPage />} />
       <Route element={user ? <AppShell /> : <Navigate to={routes.login} replace />}>
         <Route path={routes.dashboard}  element={<DashboardPage />} />
         <Route path={routes.locations}   element={<LocationsPage />} />
@@ -32,6 +35,7 @@ export function App() {
         <Route path={routes.scheduling}  element={<SchedulingPage />} />
         <Route path={routes.employees}   element={<EmployeesPage />} />
         <Route path={routes.reports}     element={<ReportsPage />} />
+        <Route path={routes.settings}    element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<Navigate to={routes.dashboard} replace />} />
     </Routes>

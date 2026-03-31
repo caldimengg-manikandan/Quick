@@ -798,11 +798,215 @@ button { font-family: var(--font); }
 }
 
 .miniValue {
+  font-size: 24px;
   font-weight: 700;
-  font-size: 20px;
+  color: var(--fg);
   font-family: var(--font-display);
-  color: var(--primary);
+  letter-spacing: -0.5px;
 }
+
+/* ─── Settings Page Custom Styles ────────────────────────────── */
+.settingsPage {
+  animation: fadeUp 0.4s ease both;
+}
+
+.settingsLayout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 48px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .settingsLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.settingsSidebar {
+  position: sticky;
+  top: 84px;
+}
+
+.settingsSearch {
+  position: relative;
+  margin-bottom: 24px;
+}
+.settingsSearchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+.settingsSearchInput {
+  padding-left: 36px;
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.settingsNavGroup {
+  margin-bottom: 24px;
+}
+.settingsNavGroupTitle {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+  margin-left: 14px;
+  font-family: var(--font);
+}
+
+.settingsNavItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 99px;
+  background: transparent;
+  border: none;
+  color: var(--fg2);
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font);
+  margin-bottom: 4px;
+}
+.settingsNavItem:hover {
+  background: var(--surface2);
+  color: var(--fg);
+}
+.settingsNavItem.active {
+  background: #5d5fef; /* Purple primary for settings */
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(93, 95, 239, 0.25);
+}
+.settingsNavItem.active .settingsNavIcon {
+  color: #fff;
+}
+
+.settingsNavIcon {
+  color: var(--muted);
+  display: flex;
+}
+
+.settingsSectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--stroke);
+}
+.settingsSectionTitle {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  font-family: var(--font);
+  letter-spacing: -0.5px;
+}
+.settingsSectionSub {
+  margin: 6px 0 0 0;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.settingsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+@media (max-width: 1000px) {
+  .settingsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.settingsCol {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.iconWrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #eff0fe; /* Light purple */
+  color: #5d5fef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logoUploadBox {
+  border: 2px dashed var(--stroke2);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 160px;
+  background: var(--surface2);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.logoUploadBox:hover {
+  border-color: #5d5fef;
+  background: #eff0fe;
+}
+
+.rangeSlider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--stroke);
+  border-radius: 3px;
+  outline: none;
+}
+.rangeSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #5d5fef;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(93, 95, 239, 0.4);
+}
+
+.toggleSwitch {
+  width: 44px;
+  height: 24px;
+  background: var(--stroke2);
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+.toggleSwitch.checked {
+  background: #5d5fef;
+}
+.toggleKnob {
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.toggleSwitch.checked .toggleKnob {
+  transform: translateX(20px);
+}
+
 
 .miniLabel {
   margin-top: 2px;

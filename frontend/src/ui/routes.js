@@ -9,5 +9,7 @@ export const routes = {
   scheduling: "/scheduling",
   employees:  "/employees",
   reports:    "/reports",
+  settings:   "/settings",
+  onboarding: "/onboarding",
 }
 

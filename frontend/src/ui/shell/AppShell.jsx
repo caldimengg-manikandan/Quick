@@ -5,6 +5,8 @@ import { isOffline } from "../../api/client.js"
 import { useAuth } from "../../state/auth/useAuth.js"
 import { routes } from "../routes.js"
 import { ThemeToggle } from "./ThemeToggle.jsx"
+import { CommandPalette } from "./CommandPalette.jsx"
+import { NotificationCenter } from "./NotificationCenter.jsx"
 
 import { 
   Home, 
@@ -17,7 +19,9 @@ import {
   BarChart3,
   MapPin,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Settings,
+  Search
 } from "lucide-react"
 
 const NAV = [
@@ -30,6 +34,7 @@ const NAV = [
   { label: "Scheduling", to: routes.scheduling,  icon: <CalendarRange size={18} strokeWidth={2.5} /> },
   { label: "Employees",  to: routes.employees,   icon: <Users size={18} strokeWidth={2.5} />,  adminOnly: true },
   { label: "Reports",    to: routes.reports,     icon: <BarChart3 size={18} strokeWidth={2.5} />,  adminOnly: true },
+  { label: "Settings",   to: routes.settings,    icon: <Settings size={18} strokeWidth={2.5} /> },
 ]
 
 function TopbarClock() {
@@ -51,6 +56,7 @@ export function AppShell() {
   const location = useLocation()
   const [offline, setOffline] = useState(false)
   const [collapsed, setCollapsed] = useState(true)
+  const [cmdOpen, setCmdOpen] = useState(false)
 
   useEffect(() => {
     const t = setInterval(() => setOffline(isOffline()), 1500)
@@ -63,6 +69,7 @@ export function AppShell() {
 
   return (
     <div className={`app ${collapsed ? "app-collapsed" : ""}`}>
+      <CommandPalette open={cmdOpen} setOpen={setCmdOpen} />
       {/* ── Topbar ───────────────────────────── */}
       <header className="topbar">
         <div className="brand">
@@ -81,6 +88,19 @@ export function AppShell() {
           )}
 
           <TopbarClock />
+
+          <button 
+            type="button"
+            className="btn btnGhost" 
+            style={{ display: "flex", alignItems: "center", gap: 12, padding: "6px 12px", background: "var(--surface2)", borderRadius: 8, color: "var(--muted)", fontSize: 13, border: "1px solid var(--stroke)" }}
+            onClick={() => setCmdOpen(true)}
+            title="Search command palette"
+          >
+            <Search size={14} /> Search anything... 
+            <span style={{ fontSize: 10, fontWeight: 800, background: "var(--surface)", padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5 }}>⌘K</span>
+          </button>
+
+          <NotificationCenter />
 
           <div className="topbarDivider"></div>
 

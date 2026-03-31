@@ -8322,6 +8322,191 @@ button {
   cursor: not-allowed;
 }
 
+.tsk-assign-body {
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tsk-assign-meta {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.tsk-assign-title {
+  width: 100%;
+  border: 1px solid var(--stroke);
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: var(--fg);
+  outline: none;
+}
+
+.tsk-assign-title:focus {
+  border-color: #6366F1;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+}
+
+.tsk-props {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tsk-prop-row {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .tsk-prop-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+}
+
+.tsk-prop-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fg2);
+}
+
+.tsk-prop-right {
+  min-width: 0;
+}
+
+.tsk-select {
+  width: 100%;
+}
+
+.tsk-prop-more {
+  background: transparent;
+  border: none;
+  padding: 8px 0;
+  color: #6366F1;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  text-align: left;
+}
+
+.tsk-prop-more:hover {
+  text-decoration: underline;
+}
+
+.tsk-form-divider {
+  height: 1px;
+  width: 100%;
+  background: var(--stroke);
+  margin: 6px 0;
+}
+
+.tsk-section-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--muted);
+}
+
+.tsk-dropzone {
+  border: 1px dashed var(--stroke2);
+  border-radius: 14px;
+  background: var(--surface2);
+  padding: 16px;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+.tsk-dropzone.dragging {
+  border-color: #6366F1;
+  background: rgba(99, 102, 241, 0.10);
+  transform: translateY(-1px);
+}
+
+.tsk-dropzone-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  text-align: center;
+}
+
+.tsk-dropzone-label {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--fg);
+}
+
+.tsk-dropzone-or {
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: var(--muted);
+}
+
+.tsk-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tsk-file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+}
+
+.tsk-file-name {
+  min-width: 0;
+  flex: 1;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fg);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tsk-file-remove {
+  background: transparent;
+  border: none;
+  padding: 6px 8px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 12px;
+  color: #EF4444;
+}
+
+.tsk-file-remove:hover {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.tsk-save-btn {
+  width: 100%;
+  justify-content: center;
+  padding: 12px 16px;
+}
+
 /* --- Leaves Module Font Style (Reference Image) -------------------- */
 .leaves-module .pageTitle {
   font-family: 'Inter', system-ui, sans-serif !important;

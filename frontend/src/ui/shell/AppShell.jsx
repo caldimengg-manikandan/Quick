@@ -17,6 +17,7 @@ import {
   CalendarRange, 
   Users, 
   BarChart3,
+  MapPin,
   ChevronLeft,
   ChevronRight,
   Settings,
@@ -25,6 +26,7 @@ import {
 
 const NAV = [
   { label: "Dashboard",  to: routes.dashboard,  icon: <Home size={18} strokeWidth={2.5} /> },
+  { label: "Locations",  to: routes.locations,  icon: <MapPin size={18} strokeWidth={2.5} /> },
   { label: "Time",       to: routes.time,        icon: <Clock size={18} strokeWidth={2.5} /> },
   { label: "Tasks",      to: routes.tasks,       icon: <CheckSquare size={18} strokeWidth={2.5} /> },
   { label: "Leaves",     to: routes.leaves,      icon: <CalendarDays size={18} strokeWidth={2.5} /> },
@@ -53,7 +55,7 @@ export function AppShell() {
   const { user, logout } = useAuth()
   const location = useLocation()
   const [offline, setOffline] = useState(false)
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(true)
   const [cmdOpen, setCmdOpen] = useState(false)
 
   useEffect(() => {
@@ -127,7 +129,7 @@ export function AppShell() {
 
       {/* ── Body ─────────────────────────────── */}
       <div className="layout">
-        <aside className="sidebar">
+        <aside className="sidebar" onMouseEnter={() => setCollapsed(false)} onMouseLeave={() => setCollapsed(true)}>
           <nav className="nav">
             {items.map((item) => (
               <NavLink

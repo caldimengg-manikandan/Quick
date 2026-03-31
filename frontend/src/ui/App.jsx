@@ -4,6 +4,7 @@ import { useAuth } from "../state/auth/useAuth.js"
 import { routes } from "./routes.js"
 import { AppShell } from "./shell/AppShell.jsx"
 import { DashboardPage }  from "./pages/DashboardPage.jsx"
+import { LocationsPage }  from "./pages/LocationsPage.jsx"
 import { EmployeesPage }  from "./pages/EmployeesPage.jsx"
 import { LeavesPage }     from "./pages/LeavesPage.jsx"
 import { LoginPage }      from "./pages/LoginPage.jsx"
@@ -26,6 +27,7 @@ export function App() {
       <Route path={routes.onboarding} element={<OnboardingPage />} />
       <Route element={user ? <AppShell /> : <Navigate to={routes.login} replace />}>
         <Route path={routes.dashboard}  element={<DashboardPage />} />
+        <Route path={routes.locations}   element={<LocationsPage />} />
         <Route path={routes.time}        element={<TimePage />} />
         <Route path={routes.tasks}       element={<TasksPage />} />
         <Route path={routes.leaves}      element={<LeavesPage />} />

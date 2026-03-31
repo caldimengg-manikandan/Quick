@@ -628,268 +628,261 @@ function EmployeeTimePage() {
         />
       )}
 
-      <div className="tp-layout">
-        {/* Header */}
-        <div className="tp-header">
+      <div className="tp-desktop-layout">
+        
+        {/* Header (Spans full width) */}
+        <div className="tp-header" style={{ marginBottom: 24 }}>
           <div>
-            <h1 className="tp-title">Time Tracker</h1>
-            <div className="tp-secure"><CheckCircle2 size={13}/> Secure Verification</div>
+            <h1 className="tp-title" style={{ fontSize: 28, fontWeight: 800 }}>Time Tracker</h1>
+            <div className="tp-secure"><CheckCircle2 size={13}/> Secure locational verification</div>
           </div>
         </div>
 
-        {error && <div className="tp-error"><AlertCircle size={14}/> {error}</div>}
+        {error && <div className="tp-error" style={{ marginBottom: 20, gridColumn: '1 / -1' }}><AlertCircle size={14}/> {error}</div>}
 
-<div className="tp-content-grid">
-          <div className="tp-content-main">
-        {/* Status Card */}
-        <div className="tp-card tp-status-card">
-          <div className="tp-status-row">
-            <div className="tp-status-left">
-              <span className={`tp-dot ${openLog ? "tp-dot--green" : "tp-dot--red"}`}/>
+        {/* ─── LEFT SIDE (ACTION PANEL) & RIGHT SIDE (MAIN CONTENT) ───────────────── */}
+        <div className="tp-main-col">
+          {/* Stats Bar (Horizontal) */}
+          {!loading && (
+            <div className="tp-stats-row">
+              <StatCard icon={<TrendingUp size={16}/>} label="Hours This Week" value={formatHrMin(weekStats.total)} color="#6366F1"/>
+              <StatCard icon={<Calendar size={16}/>}   label="Days Worked"     value={`${weekStats.days} days`}     color="#10B981"/>
+              <StatCard icon={<Timer size={16}/>}      label="Daily Average"   value={formatHrMin(weekStats.avg)}   color="#F59E0B"/>
+              {openLog && <StatCard icon={<Clock size={16}/>} label="Current Session" value={formatDuration(elapsed)} color="#EF4444" pulse/>}
+            </div>
+          )}
+
+          {/* Recent Logs Table */}
+          <div className="tp-logs">
+            <div className="tp-logs-header">
               <div>
-                <div className="tp-status-label">{openLog ? "Clocked In" : "Not Clocked In"}</div>
-                <div className="tp-status-sub">
-                  {openLog ? `Since ${formatDateTime(openLog.clock_in).split(",")[1]?.trim()}` : "Your shift hasn't started yet"}
-                </div>
+                <h2 className="tp-logs-title">Recent Logs</h2>
+                <div className="tp-logs-subtitle">{filterFrom} – {filterTo} · {logs.length} entries</div>
+              </div>
+              <div className="tp-logs-meta">
+                <span className="tp-logs-badge tp-badge-soft">{logs.length} entries</span>
+                <button className="tp-btn-ghost-icon" onClick={() => setLogsOpen(v => !v)}>
+                  <ChevronUp size={16} style={{transform:logsOpen?"rotate(0deg)":"rotate(180deg)",transition:"transform 0.25s ease"}}/>
+                </button>
               </div>
             </div>
-            <div className="tp-status-loc">
-              <MapPin size={14} color="#9CA3AF" style={{flexShrink:0,marginTop:2}}/>
-              <div style={{minWidth:0}}>
-                <div className="tp-loc-name">{resolvedAddr || "Locating…"}</div>
+
+            <div className="tp-date-filter" style={{ marginBottom: 16 }}>
+              <div className="tp-date-filter-group">
+                <label className="tp-date-label">From</label>
+                <input id="emp-date-from" type="date" className="tp-date-input" value={filterFrom} max={filterTo} onChange={e => setFilterFrom(e.target.value)}/>
+              </div>
+              <div className="tp-date-filter-sep">→</div>
+              <div className="tp-date-filter-group">
+                <label className="tp-date-label">To</label>
+                <input id="emp-date-to" type="date" className="tp-date-input" value={filterTo} min={filterFrom} max={todayStr} onChange={e => setFilterTo(e.target.value)}/>
+              </div>
+              <div style={{width: 1, height: 20, background: 'var(--stroke2)', margin: '0 8px'}}/>
+              <button className="tp-date-preset tp-btn-pill" onClick={() => { setFilterFrom(todayStr); setFilterTo(todayStr) }}>Today</button>
+              <button className="tp-date-preset tp-btn-pill" onClick={() => { setFilterFrom(weekAgo); setFilterTo(todayStr) }}>This Week</button>
+              <button className="tp-date-preset tp-btn-pill" onClick={() => { const m=new Date(); m.setDate(1); setFilterFrom(m.toLocaleDateString("en-CA")); setFilterTo(todayStr) }}>This Month</button>
+            </div>
+
+            {logsOpen && (
+              <div className="tp-table-wrap">
+                {loading ? (
+                  <div style={{padding:32,display:"flex",flexDirection:"column",gap:16}}>
+                    {[1,2,3].map(i => <Skeleton key={i} h={32} r={8}/>)}
+                  </div>
+                ) : (
+                  <table className="tp-table tp-table-modern">
+                    <thead>
+                      <tr>
+                        <th>EMPLOYEE</th><th>DATE</th><th>CLOCK IN</th><th>CLOCK OUT</th><th className="right">HOURS</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {logs.map(l => (
+                        <tr key={l.id} className={!l.clock_out ? "tp-tr-active" : ""}>
+                          <td>
+                            <div className="tp-emp-cell">
+                              <div className="tp-emp-avatar">{(l.employee_name||l.employee_username||"?").charAt(0).toUpperCase()}</div>
+                              <div>
+                                <div className="tp-emp-name tp-name-bold">{l.employee_name||l.employee_username||"Unknown"}</div>
+                                {l.employee_username && l.employee_name && <div className="tp-emp-username">@{l.employee_username}</div>}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="tp-td-date">{l.work_date}</td>
+                          <td>
+                            <div className="tp-time-cell tp-bold">
+                              <span>{formatDateTime(l.clock_in).split(",")[1]?.trim()}</span>
+                              {l.clock_in_photo && (
+                                <a href={l.clock_in_photo} target="_blank" rel="noreferrer" className="tp-photo-chip tp-photo-chip--link" title="View verification photo">
+                                  <Camera size={12}/>
+                                </a>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            {l.clock_out 
+                              ? <span className="tp-bold tp-muted">{formatDateTime(l.clock_out).split(",")[1]?.trim()}</span> 
+                              : <span className="tp-pending-badge">● Active Now</span>}
+                          </td>
+                          <td className="right">
+                            <span className={`tp-hours-pill ${!l.clock_out?"tp-hours-pill--live":""}`}>
+                              {!l.clock_out ? formatDuration(elapsed) : formatDuration(l.worked_seconds)}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                      {logs.length === 0 && <tr><td colSpan={5} className="tp-empty">No records found for this date range</td></tr>}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ─── RIGHT SIDE (ACTION PANEL) ─────────────────────────────────────── */}
+        <div className="tp-side-col">
+          <div className="tp-action-panel-sticky">
+            {/* Header of Action Panel */}
+            <div className="tp-action-header">
+              <h3 className="tp-action-title">Tracking<br/>Controls</h3>
+              <div className="tp-status-flat">
+                <span className={`tp-dot pulse-dot ${openLog ? "tp-dot--green" : "tp-dot--red"}`}/>
+                <span className="tp-status-label">{openLog ? "Clocked In" : "Not Clocked In"}</span>
+              </div>
+            </div>
+
+            {/* GPS Location Row */}
+            <div className="tp-action-loc-row">
+              <MapPin size={16} color="#6366F1" style={{flexShrink:0, marginTop:2}}/>
+              <div className="tp-action-loc-info">
+                <div className="tp-loc-name">{resolvedAddr || "Waiting for GPS lock…"}</div>
                 {currentGPS && <div className="tp-loc-coords">{currentGPS.lat.toFixed(6)}, {currentGPS.lon.toFixed(6)}</div>}
               </div>
-            </div>
-            <div className={`tp-accuracy tp-accuracy--${gpsStatus}`}>
-              {gpsStatus==="ok"       && <><Wifi size={11}/> ±{gpsAccuracy}m</>}
-              {gpsStatus==="locating" && <><Loader2 size={11} className="spin"/> Locating</>}
-              {gpsStatus==="error"    && <><WifiOff size={11}/> No GPS</>}
-            </div>
-          </div>
-          {!loading && (
-            <div className="tp-progress-wrap">
-              <div className="tp-progress-labels">
-                <span>Today's Progress</span>
-                <span>{formatHrMin(todayLog?.worked_seconds || 0)} / {DAILY_TARGET_HRS}h target</span>
+              <div className={`tp-accuracy tp-accuracy--${gpsStatus}`}>
+                {gpsStatus==="ok"       && <><Wifi size={12}/> ±{gpsAccuracy}m</>}
+                {gpsStatus==="locating" && <><Loader2 size={12} className="spin"/> Locating</>}
+                {gpsStatus==="error"    && <><WifiOff size={12}/> No GPS</>}
               </div>
-              <div className="tp-progress-track"><div className="tp-progress-fill" style={{width:`${todayPct}%`}}/></div>
             </div>
-          )}
-        </div>
 
-        {/* Stats */}
-        {!loading && (
-          <div className="tp-stats-row">
-            <StatCard icon={<TrendingUp size={16}/>} label="Hours This Week" value={formatHrMin(weekStats.total)} color="#6366F1"/>
-            <StatCard icon={<Calendar size={16}/>}   label="Days Worked"     value={`${weekStats.days} days`}     color="#10B981"/>
-            <StatCard icon={<Timer size={16}/>}      label="Daily Average"   value={formatHrMin(weekStats.avg)}   color="#F59E0B"/>
-            {openLog && <StatCard icon={<Clock size={16}/>} label="Current Session" value={formatDuration(elapsed)} color="#EF4444"/>}
-          </div>
-        )}
-
-        {/* Recent Logs */}
-        <div className="tp-logs">
-          <div className="tp-logs-header">
-            <div>
-              <h2 className="tp-logs-title">Recent Logs</h2>
-              <div className="tp-logs-subtitle">{filterFrom} – {filterTo} · {logs.length} entries</div>
-            </div>
-            <div className="tp-logs-meta">
-              <span className="tp-logs-badge">{logs.length} entries</span>
-              <button className="tp-logs-chevron" onClick={() => setLogsOpen(v => !v)}>
-                <ChevronUp size={15} style={{transform:logsOpen?"rotate(0deg)":"rotate(180deg)",transition:"transform 0.25s ease"}}/>
-              </button>
-            </div>
-          </div>
-
-          <div className="tp-date-filter">
-            <div className="tp-date-filter-group">
-              <label className="tp-date-label">From</label>
-              <input id="emp-date-from" type="date" className="tp-date-input" value={filterFrom} max={filterTo} onChange={e => setFilterFrom(e.target.value)}/>
-            </div>
-            <div className="tp-date-filter-sep">→</div>
-            <div className="tp-date-filter-group">
-              <label className="tp-date-label">To</label>
-              <input id="emp-date-to" type="date" className="tp-date-input" value={filterTo} min={filterFrom} max={todayStr} onChange={e => setFilterTo(e.target.value)}/>
-            </div>
-            <button className="tp-date-preset" onClick={() => { setFilterFrom(todayStr); setFilterTo(todayStr) }}>Today</button>
-            <button className="tp-date-preset" onClick={() => { setFilterFrom(weekAgo); setFilterTo(todayStr) }}>This Week</button>
-            <button className="tp-date-preset" onClick={() => { const m=new Date(); m.setDate(1); setFilterFrom(m.toLocaleDateString("en-CA")); setFilterTo(todayStr) }}>This Month</button>
-          </div>
-
-          {logsOpen && (
-            <div className="tp-table-wrap">
-              {loading ? (
-                <div style={{padding:24,display:"flex",flexDirection:"column",gap:12}}>{[1,2,3].map(i => <Skeleton key={i} h={20}/>)}</div>
-              ) : (
-                <table className="tp-table">
-                  <thead>
-                    <tr>
-                      <th>EMPLOYEE</th><th>DATE</th><th>CLOCK IN</th><th>CLOCK OUT</th><th className="right">HOURS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {logs.map(l => (
-                      <tr key={l.id}>
-                        <td>
-                          <div className="tp-emp-cell">
-                            <div className="tp-emp-avatar">{(l.employee_name||l.employee_username||"?").charAt(0).toUpperCase()}</div>
-                            <div>
-                              <div className="tp-emp-name">{l.employee_name||l.employee_username||"Unknown"}</div>
-                              {l.employee_username && l.employee_name && <div className="tp-emp-username">@{l.employee_username}</div>}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="tp-td-date">{l.work_date}</td>
-                        <td>
-                          <div className="tp-time-cell">
-                            <span>{formatDateTime(l.clock_in).split(",")[1]?.trim()}</span>
-                            {l.clock_in_photo && (
-                              <a href={l.clock_in_photo} target="_blank" rel="noreferrer" className="tp-photo-chip tp-photo-chip--link" title="View verification photo">
-                                <Camera size={10}/>
-                              </a>
-                            )}
-                          </div>
-                        </td>
-                        <td>{l.clock_out ? <span>{formatDateTime(l.clock_out).split(",")[1]?.trim()}</span> : <span className="tp-pending-badge">● Live</span>}</td>
-                        <td className="right">
-                          <span className={`tp-hours-pill ${!l.clock_out?"tp-hours-pill--live":""}`}>
-                            {!l.clock_out ? formatDuration(elapsed) : formatDuration(l.worked_seconds)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                    {logs.length === 0 && <tr><td colSpan={5} className="tp-empty">No records found for this date range</td></tr>}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          )}
-        </div>
-          </div>
-          <div className="tp-content-side">
-        {/* Action Card */}
-        <div className="tp-card tp-action-card">
-          {loading ? (
-            <div className="tp-form" style={{gap:16}}>
-              <Skeleton h={52} r={12}/><Skeleton h={24} w="60%"/><Skeleton h={100} r={10}/><Skeleton h={52} r={10}/><Skeleton h={48} r={10}/>
-            </div>
-          ) : openLog ? (
-            <div className="tp-form">
-              <div className="tp-clocked-meta">
-                <div className="tp-meta-item">
-                  <div className="tp-meta-label">SHIFT STARTED</div>
-                  <div className="tp-meta-value">{formatDateTime(openLog.clock_in).split(",")[1]?.trim()}</div>
+            {/* Progress Bar (Today target) */}
+            {!loading && (
+              <div className="tp-action-progress">
+                <div className="tp-progress-labels">
+                  <span className="tp-progress-title">Today's Progress</span>
+                  <span className="tp-progress-values">{formatHrMin(todayLog?.worked_seconds || 0)} / {DAILY_TARGET_HRS}h</span>
                 </div>
-                <div className="tp-meta-item">
-                  <div className="tp-meta-label">TIME ELAPSED</div>
-                  <div className="tp-meta-value tp-mono">{formatDuration(elapsed)}</div>
-                </div>
-                <div className="tp-meta-item">
-                  <div className="tp-meta-label">BREAKS TAKEN</div>
-                  <div className="tp-meta-value">{openLog.breaks?.length || 0} sessions</div>
-                </div>
+                <div className="tp-progress-track"><div className="tp-progress-fill" style={{width:`${todayPct}%`}}/></div>
               </div>
+            )}
 
-              {openBreak && (
-                <div className="tp-break-panel">
-                  <div className="tp-break-panel-header">
+            <hr className="tp-action-divider"/>
+
+            {/* ── Action Forms ── */}
+            {loading ? (
+              <div className="tp-form-skeleton">
+                <Skeleton h={52} r={12}/><Skeleton h={24} w="60%"/><Skeleton h={100} r={10}/><Skeleton h={52} r={10}/>
+              </div>
+            ) : openLog ? (
+              <div className="tp-form tp-action-form">
+                
+                {/* 3 Metric blocks (Shift, Elapsed, Breaks) */}
+                <div className="tp-clocked-meta-grid">
+                  <div className="tp-meta-block">
+                    <div className="tp-meta-label">SHIFT STARTED</div>
+                    <div className="tp-meta-value">{formatDateTime(openLog.clock_in).split(",")[1]?.trim()}</div>
+                  </div>
+                  <div className="tp-meta-block">
+                    <div className="tp-meta-label">TIME ELAPSED</div>
+                    <div className="tp-meta-value tp-mono">{formatDuration(elapsed)}</div>
+                  </div>
+                  <div className="tp-meta-block">
+                    <div className="tp-meta-label">BREAKS</div>
+                    <div className="tp-meta-value">{openLog.breaks?.length || 0} taken</div>
+                  </div>
+                </div>
+
+                {openBreak && (
+                  <div className="tp-break-banner">
                     <div className="tp-break-live-dot"/>
-                    <Coffee size={14}/><span>Currently on break</span>
-                    <span className="tp-break-live-timer">{formatDuration(breakElapsed)}</span>
-                  </div>
-                  <div className="tp-break-panel-sub">
-                    Started at {formatDateTime(openBreak.break_start).split(",")[1]?.trim()} · tap <strong>Resume</strong> when ready
-                  </div>
-                </div>
-              )}
-
-              {completedBreaks.length > 0 && (
-                <div className="tp-break-history">
-                  <div className="tp-break-history-header">
-                    <Coffee size={12}/><span>Break History</span>
-                    <span className="tp-break-history-total">Total: {formatDuration(totalBreakSecs)}</span>
-                  </div>
-                  {completedBreaks.map((b, i) => (
-                    <div key={b.id || i} className="tp-break-row">
-                      <span className="tp-break-num">#{i+1}</span>
-                      <span className="tp-break-time">
-                        {formatDateTime(b.break_start).split(",")[1]?.trim()} → {formatDateTime(b.break_end).split(",")[1]?.trim()}
-                      </span>
-                      <span className="tp-break-dur">{formatDuration(b.duration_seconds)}</span>
+                    <div className="tp-break-banner-info">
+                      <div className="tp-break-banner-title">Coffee Break Active</div>
+                      <div className="tp-break-banner-sub">Started at {formatDateTime(openBreak.break_start).split(",")[1]?.trim()}</div>
                     </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="tp-field">
-                <label className="tp-field-label"><Edit3 size={13}/> Current Task Summary</label>
-                <textarea className="tp-textarea" placeholder="What have you accomplished so far…" value={sessionNotes} onChange={e => setSessionNotes(e.target.value)} rows={3}/>
-              </div>
-
-              <div className="tp-actions">
-                {!openBreak ? (
-                  <button className="tp-btn tp-btn--secondary" disabled={busy} onClick={() => action("/time/break/start/")}>
-                    {busy ? <Loader2 size={15} className="spin"/> : <Coffee size={15}/>} Take Break
-                  </button>
-                ) : (
-                  <button className="tp-btn tp-btn--warning" disabled={busy} onClick={() => action("/time/break/end/")}>
-                    {busy ? <Loader2 size={15} className="spin"/> : <Play size={15}/>} Resume Work
-                  </button>
+                    <div className="tp-break-timer">{formatDuration(breakElapsed)}</div>
+                  </div>
                 )}
-                <button className="tp-btn tp-btn--danger" disabled={busy} onClick={() => action("/time/clock-out/")}>
-                  {busy ? <Loader2 size={15} className="spin"/> : <Square size={15} fill="currentColor"/>} Clock Out
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="tp-form">
-              <div className="tp-selfie-row" onClick={() => setShowSelfie(true)}>
-                <div className="tp-selfie-left">
-                  <div className="tp-cam-icon">
-                    {selfiePreview
-                      ? <img src={selfiePreview} alt="selfie" style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:10}}/>
-                      : <Camera size={22} color="#6366F1"/>}
+
+                {completedBreaks.length > 0 && (
+                  <div className="tp-break-history tp-break-history-compact">
+                    <div className="tp-break-history-header">
+                      <span><Coffee size={13}/> Break History</span>
+                      <span className="tp-break-history-total">∑ {formatDuration(totalBreakSecs)}</span>
+                    </div>
                   </div>
-                  <div>
-                    <div className="tp-selfie-title">{selfiePreview ? <><Check size={13} style={{color:"#10B981",marginRight:4}}/>Selfie Captured</> : "Capture Selfie"}</div>
-                    <div className="tp-selfie-sub">{selfiePreview ? "Tap to retake" : "Required for clock-in verification"}</div>
-                  </div>
+                )}
+
+                <div className="tp-field" style={{marginTop: 8}}>
+                  <label className="tp-field-label">Current Task Summary</label>
+                  <textarea className="tp-textarea tp-textarea-modern" placeholder="Update your progress..." value={sessionNotes} onChange={e => setSessionNotes(e.target.value)} rows={3}/>
                 </div>
-                <button className={`tp-open-camera-btn ${selfiePreview?"tp-open-camera-btn--done":""}`} onClick={e => { e.stopPropagation(); setShowSelfie(true) }}>
-                  <Camera size={13}/> {selfiePreview ? "Retake" : "Open Camera"}
+
+                <div className="tp-actions-grid" style={{marginTop: 16}}>
+                  {!openBreak ? (
+                    <button className="tp-btn-massive tp-btn-massive--outline" disabled={busy} onClick={() => action("/time/break/start/")}>
+                      {busy ? <Loader2 size={16} className="spin"/> : <Coffee size={16}/>} Take Break
+                    </button>
+                  ) : (
+                    <button className="tp-btn-massive tp-btn-massive--outline" disabled={busy} onClick={() => action("/time/break/end/")}>
+                      {busy ? <Loader2 size={16} className="spin"/> : <Play size={16}/>} Resume Work
+                    </button>
+                  )}
+                  <button className="tp-btn-massive tp-btn-massive--danger" disabled={busy} onClick={() => action("/time/clock-out/")}>
+                    {busy ? <Loader2 size={16} className="spin"/> : <Square size={14} fill="currentColor"/>} Clock Out
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="tp-form tp-action-form">
+                
+                <div className="tp-selfie-block" onClick={() => setShowSelfie(true)}>
+                  <div className="tp-selfie-bg">
+                    {selfiePreview
+                      ? <img src={selfiePreview} alt="selfie" style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:12}}/>
+                      : <div className="tp-selfie-placeholder"><Camera size={32} opacity={0.6}/><span>Tap to capture mandatory selfie</span></div>}
+                  </div>
+                  {selfiePreview && <div className="tp-selfie-success-badge"><Check size={14}/> Verified</div>}
+                </div>
+
+                <div className="tp-field">
+                  <label className="tp-field-label">What are you working on?</label>
+                  <textarea className="tp-textarea tp-textarea-modern" placeholder="I plan to accomplish..." value={sessionNotes} onChange={e => setSessionNotes(e.target.value)} rows={3}/>
+                </div>
+
+                <div className="tp-attach-line">
+                  <label className="tp-attach-box-btn" htmlFor="tp-file-input">
+                    <input id="tp-file-input" type="file" style={{display:"none"}} onChange={e => setSessionPhoto(e.target.files[0])}/>
+                    <Paperclip size={14} color={sessionPhoto?"#6366F1":"currentColor"}/>
+                    <span style={{color:sessionPhoto?"#6366F1":"inherit", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"}}>
+                      {sessionPhoto ? sessionPhoto.name : "Attach starting photo (optional)"}
+                    </span>
+                  </label>
+                </div>
+
+                {!resolvedAddr && gpsStatus!=="error" && (
+                  <div className="tp-gps-hint-modern"><Loader2 size={14} className="spin"/> Waiting for GPS lock…</div>
+                )}
+                {gpsStatus==="error" && (
+                  <div className="tp-gps-hint-modern tp-gps-hint--err"><WifiOff size={14}/> GPS unavailable. Blocked.</div>
+                )}
+
+                <button className="tp-clock-in-massive" disabled={busy || (!resolvedAddr && gpsStatus!=="error") || !selfieFile} onClick={() => action("/time/clock-in/")}>
+                  {busy ? <Loader2 className="spin" size={20}/> : "CLOCK IN"}
                 </button>
+                {!selfieFile && <div style={{textAlign: "center", fontSize: 11, color: "var(--warn-text)", fontWeight: 600, marginTop: 8}}>Selfie is required to clock in</div>}
               </div>
-
-              <div className="tp-field">
-                <label className="tp-field-label"><Edit3 size={13}/> What are you working on?</label>
-                <textarea className="tp-textarea" placeholder="Enter today's task or project details…" value={sessionNotes} onChange={e => setSessionNotes(e.target.value)} rows={4}/>
-              </div>
-
-              <div className="tp-attach-wrap">
-                <div className="tp-attach-label"><span>Photo Attachment</span><span className="tp-optional-badge">OPTIONAL</span></div>
-                <label className="tp-attach-box" htmlFor="tp-file-input">
-                  <input id="tp-file-input" type="file" style={{display:"none"}} onChange={e => setSessionPhoto(e.target.files[0])}/>
-                  <Paperclip size={16} color={sessionPhoto?"#6366F1":"#9CA3AF"}/>
-                  <span style={{color:sessionPhoto?"#6366F1":"inherit"}}>{sessionPhoto ? sessionPhoto.name : "Click to choose a file, or drag and drop"}</span>
-                  {sessionPhoto && <RefreshCw size={13} color="#9CA3AF" style={{marginLeft:"auto"}}/>}
-                </label>
-              </div>
-
-              {!resolvedAddr && gpsStatus!=="error" && (
-                <div className="tp-gps-hint"><Loader2 size={13} className="spin"/> Waiting for GPS lock before you can clock in…</div>
-              )}
-              {gpsStatus==="error" && (
-                <div className="tp-gps-hint tp-gps-hint--err"><WifiOff size={13}/> GPS unavailable — location will not be recorded.</div>
-              )}
-
-              <button className="tp-clock-in-btn" disabled={busy || (!resolvedAddr && gpsStatus!=="error")} onClick={() => action("/time/clock-in/")}>
-                {busy ? <Loader2 className="spin" size={18}/> : "Clock In"}
-              </button>
-            </div>
-          )}
-        </div>
-
+            )}
           </div>
         </div>
       </div>

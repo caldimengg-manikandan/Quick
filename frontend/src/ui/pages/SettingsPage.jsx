@@ -1,809 +1,838 @@
-import { useState, useEffect } from "react"
-import { 
-  Building2, Palette, CreditCard, Users2, History, ScrollText, 
-  Clock, CalendarDays, Banknote, FileText, ShieldCheck, BarChart3, 
-  Bell, Workflow, Search, Globe, Image as ImageIcon, Target, Settings,
-  Sun, Moon, Monitor, RefreshCcw,
-  Zap, Shield, Crown, Check, Minus, Star, ArrowRight,
-  Plus, ChevronDown, ChevronUp, MoreHorizontal, UserCheck, UserMinus, UserX, Activity, Info, Lock
+import { useState, useRef, useCallback, useEffect } from "react"
+import {
+  Building2, Palette, CreditCard, Users2, History, ScrollText,
+  Clock, CalendarDays, Banknote, FileText, ShieldCheck, BarChart3,
+  Bell, Workflow, Search, Globe, Image as ImageIcon, Settings,
+  Sun, Moon, Monitor, RefreshCcw, Zap, Shield, Crown, Check, Minus,
+  Star, ArrowRight, Plus, ChevronDown, Lock, Activity, Info,
+  Save, X, CheckCircle2, AlertTriangle, Upload, Eye, EyeOff,
+  Smartphone, Mail, MessageSquare, LogOut, Key, Wifi, Clock3,
+  Edit3, MapPin, DollarSign, Calendar, TrendingUp, User,
+  ChevronRight, Home
 } from "lucide-react"
 
-export function SettingsPage() {
-  const [activeTab, setActiveTab] = useState("general")
+/* ── Helpers ─────────────────────────────────────────────────── */
+function Toast({ message, type = "success", onDismiss }) {
+  useEffect(() => { const t = setTimeout(onDismiss, 3500); return () => clearTimeout(t) }, [onDismiss])
+  return (
+    <div className="stToast" data-type={type}>
+      {type === "success" ? <CheckCircle2 size={15} /> : <AlertTriangle size={15} />}
+      <span>{message}</span>
+      <button onClick={onDismiss} className="stToastClose"><X size={13} /></button>
+    </div>
+  )
+}
 
-  const MENU = [
-    {
-      group: "ORGANIZATION",
-      items: [
-        { id: "general", label: "General & Organization", icon: <Building2 size={16} /> },
-        { id: "branding", label: "Branding & Theme", icon: <Palette size={16} /> },
-        { id: "plan", label: "Plan & Subscription", icon: <CreditCard size={16} /> },
-      ]
-    },
-    {
-      group: "ACCESS & CONTROL",
-      items: [
-        { id: "users", label: "Users & Roles", icon: <Users2 size={16} /> },
-        { id: "permissions", label: "Permission History", icon: <History size={16} /> },
-        { id: "logs", label: "System Logs", icon: <ScrollText size={16} /> },
-      ]
-    },
-    {
-      group: "POLICIES",
-      items: [
-        { id: "timesheet", label: "Timesheet Policy", icon: <Clock size={16} /> },
-        { id: "leave", label: "Leave Policy", icon: <CalendarDays size={16} /> },
-        { id: "payroll", label: "Payroll Policy", icon: <Banknote size={16} /> },
-        { id: "payslip", label: "Payslip Templates", icon: <FileText size={16} /> },
-        { id: "compliance", label: "Compliance & Locks", icon: <ShieldCheck size={16} /> },
-      ]
-    },
-    {
-      group: "SYSTEM",
-      items: [
-        { id: "reports", label: "Reports & Automation", icon: <BarChart3 size={16} /> },
-        { id: "notifications", label: "Notifications", icon: <Bell size={16} /> },
-        { id: "integrations", label: "Integrations", icon: <Workflow size={16} /> },
-      ]
-    }
-  ]
+function SaveBar({ dirty, onSave, onDiscard, saving }) {
+  if (!dirty) return null
+  return (
+    <div className="stSaveBar">
+      <div className="stSaveBarLeft"><span className="stSaveBarDot" />Unsaved changes</div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button className="btn btnGhost" style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }} onClick={onDiscard}>Discard</button>
+        <button className="stSaveBtn" onClick={onSave} disabled={saving}>
+          {saving ? <RefreshCcw size={13} style={{ animation: "stSpin .7s linear infinite" }} /> : <Save size={13} />}
+          {saving ? "Saving..." : "Save changes"}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function ToggleSwitch({ checked, onChange, accent = "#1A56DB" }) {
+  return (
+    <div className={`stToggle ${checked ? "on" : ""}`} onClick={() => onChange(!checked)} style={{ "--acc": accent }}>
+      <div className="stToggleKnob" />
+    </div>
+  )
+}
+
+/* ── Main Page ───────────────────────────────────────────────── */
+const TABS = [
+  {
+    id: "general", label: "General",
+    subs: [
+      { id: "profile",      label: "Profile",           icon: <User size={14} /> },
+      { id: "organization", label: "Organization",       icon: <Building2 size={14} /> },
+      { id: "logo",         label: "Company Logo",       icon: <ImageIcon size={14} /> },
+      { id: "localization", label: "Localization",       icon: <Globe size={14} /> },
+      { id: "pace",         label: "Operational Pace",   icon: <TrendingUp size={14} /> },
+    ]
+  },
+  {
+    id: "notifications", label: "Notifications",
+    subs: [
+      { id: "notif-prefs",  label: "Preferences",       icon: <Bell size={14} /> },
+      { id: "activity",     label: "Activity Logs",      icon: <ScrollText size={14} /> },
+    ]
+  },
+  {
+    id: "members", label: "Members",
+    subs: [
+      { id: "users",        label: "Users & Roles",      icon: <Users2 size={14} /> },
+      { id: "permissions",  label: "Permission History", icon: <History size={14} /> },
+    ]
+  },
+  {
+    id: "billings", label: "Billings",
+    subs: [
+      { id: "plan",         label: "Plans & Subscription", icon: <CreditCard size={14} /> },
+      { id: "invoices",     label: "Invoices",              icon: <FileText size={14} /> },
+    ]
+  },
+  {
+    id: "language", label: "Language & Region",
+    subs: [
+      { id: "localization", label: "Timezone & Format",  icon: <Globe size={14} /> },
+      { id: "fiscal",       label: "Fiscal Calendar",    icon: <Calendar size={14} /> },
+    ]
+  },
+  {
+    id: "security", label: "Security",
+    subs: [
+      { id: "security-sessions", label: "Active Sessions", icon: <Wifi size={14} /> },
+      { id: "security-password", label: "Password",        icon: <Key size={14} /> },
+      { id: "security-2fa",      label: "Two-Factor Auth", icon: <Smartphone size={14} /> },
+    ]
+  },
+]
+
+export function SettingsPage() {
+  const [activeSection, setActiveSection] = useState("profile")
+  const [activeTab, setActiveTab]         = useState("general")
+  const [hoveredTab, setHoveredTab]       = useState(null)
+  const [dirty, setDirty]                 = useState(false)
+  const [saving, setSaving]               = useState(false)
+  const [toast, setToast]                 = useState(null)
+  const markDirty = useCallback(() => setDirty(true), [])
+  const showToast = useCallback((msg, type = "success") => setToast({ msg, type, id: Date.now() }), [])
+
+  const handleSave = async () => {
+    setSaving(true); await new Promise(r => setTimeout(r, 800)); setSaving(false); setDirty(false)
+    showToast("Changes saved successfully!")
+  }
+  const handleDiscard = () => { setDirty(false); showToast("Changes discarded.", "warn") }
+
+  const navigate = (tabId, secId) => { setActiveTab(tabId); setActiveSection(secId); setHoveredTab(null) }
+
+  /* left card items for current tab */
+  const currentTab   = TABS.find(t => t.subs.some(s => s.id === activeSection)) || TABS[0]
+  const currentSubs  = currentTab.subs
 
   return (
-    <div className="settingsPage">
-      <div className="pageHeader" style={{ marginBottom: 32 }}>
-        <div>
-          <h1 className="pageTitle">Enterprise Settings</h1>
-          <div className="pageSub">Configure system-wide preferences, policies, and integrations.</div>
-        </div>
+    <div className="stPage">
+      {/* ── Breadcrumb ── */}
+      <div className="stBreadcrumb">
+        <Home size={13} /><span>Home</span>
+        <ChevronRight size={12} /><span className="stBreadcrumbActive">Settings</span>
       </div>
 
-      <div className="settingsLayout">
-        <aside className="settingsSidebar">
-          <div className="settingsSearch">
-            <Search size={16} className="settingsSearchIcon" />
-            <input type="text" placeholder="Find a setting..." className="input settingsSearchInput" />
-          </div>
-
-          <nav className="settingsNav">
-            {MENU.map((group, i) => (
-              <div key={i} className="settingsNavGroup">
-                <div className="settingsNavGroupTitle">{group.group}</div>
-                {group.items.map(item => (
-                  <button
-                    key={item.id}
-                    className={`settingsNavItem ${activeTab === item.id ? "active" : ""}`}
-                    onClick={() => setActiveTab(item.id)}
-                  >
-                    <span className="settingsNavIcon">{item.icon}</span>
-                    <span className="settingsNavLabel">{item.label}</span>
-                  </button>
-                ))}
+      {/* ── Page Title + Tab Bar ── */}
+      <div className="stTopRow">
+        <h1 className="stPageTitle">Settings</h1>
+        <nav className="stTabBar">
+          {TABS.map(tab => {
+            const isCurrent = currentTab.id === tab.id
+            return (
+              <div
+                key={tab.id}
+                className={`stTabItem ${isCurrent ? "active" : ""}`}
+                onMouseEnter={() => setHoveredTab(tab.id)}
+                onMouseLeave={() => setHoveredTab(null)}
+              >
+                <button
+                  className="stTabBtn"
+                  onClick={() => navigate(tab.id, tab.subs[0].id)}
+                >
+                  {tab.label}
+                  <ChevronDown size={12} style={{ marginLeft: 4, opacity: 0.5 }} />
+                </button>
+                {/* Hover Dropdown */}
+                {hoveredTab === tab.id && (
+                  <div className="stTabDropdown">
+                    {tab.subs.map(sub => (
+                      <button
+                        key={sub.id}
+                        className={`stTabDropItem ${activeSection === sub.id ? "active" : ""}`}
+                        onClick={() => navigate(tab.id, sub.id)}
+                      >
+                        <span className="stTabDropIcon">{sub.icon}</span>
+                        {sub.label}
+                        {activeSection === sub.id && <Check size={12} style={{ marginLeft: "auto", color: "#1A56DB" }} />}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
+            )
+          })}
+        </nav>
+      </div>
+
+      {/* ── Body ── */}
+      <div className="stBody">
+        {/* Left Card */}
+        <aside className="stLeftCard">
+          <div className="stLeftCardTop">
+            <div className="stLeftAvatar">
+              <span>J</span>
+              <button className="stAvatarEdit"><Edit3 size={11} /></button>
+            </div>
+            <div className="stLeftName">Organization Admin</div>
+            <div className="stLeftRole">Enterprise ERP</div>
+            <p className="stLeftBio">Manage your organization's settings, policies and integrations.</p>
+          </div>
+          <div className="stLeftNav">
+            <div className="stLeftNavLabel">{currentTab.label}</div>
+            {currentSubs.map(sub => (
+              <button
+                key={sub.id}
+                className={`stLeftNavItem ${activeSection === sub.id ? "active" : ""}`}
+                onClick={() => setActiveSection(sub.id)}
+              >
+                <span className="stLeftNavIcon">{sub.icon}</span>
+                {sub.label}
+              </button>
             ))}
-          </nav>
+          </div>
         </aside>
 
-        <main className="settingsContent">
-          {activeTab === "general" && <GeneralOrganizationTab />}
-          {activeTab === "branding" && <BrandingThemeTab />}
-          {activeTab === "plan" && <PlanSubscriptionTab />}
-          {activeTab === "users" && <UsersRolesTab />}
-          {activeTab !== "general" && activeTab !== "branding" && activeTab !== "plan" && activeTab !== "users" && (
-            <div className="card" style={{ padding: 48, textAlign: "center", color: "var(--muted)" }}>
-              <Settings size={48} opacity={0.2} style={{ margin: "0 auto 16px auto", display: "block" }} />
-              <h3 style={{ margin: 0, color: "var(--fg)", fontSize: 16 }}>{MENU.flatMap(g => g.items).find(i => i.id === activeTab)?.label}</h3>
-              <p style={{ marginTop: 8 }}>Configuration options for this section will be available soon.</p>
-            </div>
-          )}
+        {/* Right Content */}
+        <main className="stMain">
+          {activeSection === "profile"           && <ProfileSection markDirty={markDirty} showToast={showToast}/>}
+          {activeSection === "organization"      && <OrganizationSection markDirty={markDirty}/>}
+          {activeSection === "logo"              && <LogoSection markDirty={markDirty}/>}
+          {activeSection === "localization"      && <LocalizationSection markDirty={markDirty}/>}
+          {activeSection === "fiscal"            && <LocalizationSection markDirty={markDirty}/>}
+          {activeSection === "pace"              && <PaceSection markDirty={markDirty}/>}
+          {activeSection === "notif-prefs"       && <NotificationsSection markDirty={markDirty}/>}
+          {activeSection === "activity"          && <ActivitySection />}
+          {activeSection === "users"             && <UsersSection showToast={showToast}/>}
+          {activeSection === "plan"              && <PlanSection />}
+          {activeSection === "security-sessions" && <SecuritySessionsSection showToast={showToast}/>}
+          {activeSection === "security-password" && <SecurityPasswordSection showToast={showToast}/>}
+          {activeSection === "security-2fa"      && <Security2FASection markDirty={markDirty} showToast={showToast}/>}
+          {["permissions","invoices"].includes(activeSection) && <ComingSoon label={currentSubs.find(s=>s.id===activeSection)?.label}/>}
         </main>
       </div>
+
+      <SaveBar dirty={dirty} onSave={handleSave} onDiscard={handleDiscard} saving={saving} />
+      {toast && <Toast key={toast.id} message={toast.msg} type={toast.type} onDismiss={() => setToast(null)} />}
     </div>
   )
 }
 
-function GeneralOrganizationTab() {
+/* ── Field Helper ─────────────────────────────────────────────── */
+function Field({ label, children, half }) {
   return (
-    <div className="settingsSection">
-      {/* Tab Header */}
-      <div className="settingsSectionHeader">
-        <div>
-          <h2 className="settingsSectionTitle">Organization Landscape</h2>
-          <p className="settingsSectionSub">Manage company identity, localization and operational basics</p>
-        </div>
-        <div className="badge badgeBase" style={{ background: "var(--primary-glow)", color: "var(--primary)", borderColor: "var(--primary)", fontWeight: 700 }}>
-          CURRENT PLAN: PRO
-        </div>
-      </div>
-
-      {/* Grid Layout for Cards */}
-      <div className="settingsGrid">
-        
-        {/* Left Column */}
-        <div className="settingsCol">
-          
-          {/* Corporate Identity */}
-          <div className="card">
-            <div className="cardHeader" style={{ background: "transparent", borderBottom: "none", paddingBottom: 0 }}>
-              <div className="row">
-                <div className="iconWrap"><Globe size={18} /></div>
-                <div>
-                  <div className="cardTitle" style={{ color: "var(--fg)", fontWeight: 700, letterSpacing: 0, fontSize: 14 }}>Corporate Identity</div>
-                  <div className="cardSub" style={{ fontSize: 12, color: "var(--muted)" }}>Define your company's core public information</div>
-                </div>
-              </div>
-            </div>
-            <div className="cardBody stackLg">
-              <div className="field">
-                <label className="fieldLabel">OFFICIAL COMPANY NAME</label>
-                <input type="text" className="input" defaultValue="CALTIMS" />
-              </div>
-              <div className="field">
-                <label className="fieldLabel">HEADQUARTERS ADDRESS</label>
-                <textarea className="input textarea" defaultValue="123 Enterprise Way, Tech City..."></textarea>
-              </div>
-              <div className="grid2Tight">
-                <div className="field">
-                  <label className="fieldLabel">OPERATIONAL COUNTRY</label>
-                  <input type="text" className="input" defaultValue="India" />
-                </div>
-                <div className="field">
-                  <label className="fieldLabel">BASE CURRENCY</label>
-                  <select className="input">
-                    <option>USD ($)</option>
-                    <option>INR (₹)</option>
-                    <option>EUR (€)</option>
-                    <option>GBP (£)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* System Localization */}
-          <div className="card">
-            <div className="cardHeader" style={{ background: "transparent", borderBottom: "none", paddingBottom: 0 }}>
-              <div className="row">
-                <div className="iconWrap"><Target size={18} /></div>
-                <div>
-                  <div className="cardTitle" style={{ color: "var(--fg)", fontWeight: 700, letterSpacing: 0, fontSize: 14 }}>System Localization</div>
-                  <div className="cardSub" style={{ fontSize: 12, color: "var(--muted)" }}>Regional and time-based configurations</div>
-                </div>
-              </div>
-            </div>
-            <div className="cardBody stackLg">
-              <div className="grid2Tight">
-                <div className="field">
-                  <label className="fieldLabel">ENTERPRISE TIMEZONE</label>
-                  <select className="input">
-                    <option>Select Timezone</option>
-                    <option selected>Asia/Kolkata (IST)</option>
-                    <option>America/New_York (EST)</option>
-                  </select>
-                </div>
-                <div className="field">
-                  <label className="fieldLabel">DISPLAY DATE FORMAT</label>
-                  <select className="input">
-                    <option>DD/MM/YYYY</option>
-                    <option>MM/DD/YYYY</option>
-                    <option>YYYY-MM-DD</option>
-                  </select>
-                </div>
-                <div className="field">
-                  <label className="fieldLabel">FISCAL YEAR START</label>
-                  <select className="input">
-                    <option>April</option>
-                    <option>January</option>
-                    <option>July</option>
-                  </select>
-                </div>
-                <div className="field">
-                  <label className="fieldLabel">STANDARD WORK WEEK</label>
-                  <select className="input">
-                    <option>Monday - Friday</option>
-                    <option>Monday - Saturday</option>
-                    <option>Sunday - Thursday</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Right Column */}
-        <div className="settingsCol">
-          
-          {/* Company Logo */}
-          <div className="card">
-            <div className="cardHeader" style={{ background: "transparent", borderBottom: "none", paddingBottom: 0 }}>
-              <div className="row">
-                <div className="iconWrap"><ImageIcon size={18} /></div>
-                <div>
-                  <div className="cardTitle" style={{ color: "var(--fg)", fontWeight: 700, letterSpacing: 0, fontSize: 14 }}>Company Logo</div>
-                  <div className="cardSub" style={{ fontSize: 12, color: "var(--muted)" }}>Brand assets for system reporting</div>
-                </div>
-              </div>
-            </div>
-            <div className="cardBody">
-              <div className="logoUploadBox">
-                <Globe size={32} opacity={0.3} style={{ marginBottom: 12 }} />
-                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", letterSpacing: 0.5 }}>SELECT IMAGE ASSET</div>
-              </div>
-              <div style={{ textAlign: "center", marginTop: 16 }}>
-                <button className="btn btnGhost" style={{ color: "var(--primary)", fontSize: 12, fontWeight: 700, letterSpacing: 0.5, display: "inline-flex" }}>UPLOAD NEW LOGO</button>
-              </div>
-            </div>
-          </div>
-
-          {/* Operational Pace */}
-          <div className="card">
-            <div className="cardHeader" style={{ background: "transparent", borderBottom: "none", paddingBottom: 0 }}>
-              <div className="row">
-                <div className="iconWrap"><Clock size={18} /></div>
-                <div>
-                  <div className="cardTitle" style={{ color: "var(--fg)", fontWeight: 700, letterSpacing: 0, fontSize: 14 }}>Operational Pace</div>
-                  <div className="cardSub" style={{ fontSize: 12, color: "var(--muted)" }}>Default system-wide pace rules</div>
-                </div>
-              </div>
-            </div>
-            <div className="cardBody stackLg">
-              
-              <div className="field">
-                <div className="row" style={{ justifyContent: "space-between", marginBottom: 8 }}>
-                  <label className="fieldLabel">STANDARD WORK DAY</label>
-                  <div className="pill" style={{ background: "var(--primary)", color: "#fff", border: "none" }}>8 HRS</div>
-                </div>
-                <input type="range" min="1" max="12" defaultValue="8" className="rangeSlider" />
-                <div className="fieldHint" style={{ marginTop: 8 }}>Leaves threshold tracking for timesheet compliance.</div>
-              </div>
-
-              <div className="divider" style={{ height: 1, background: "var(--stroke)", margin: "8px 0" }}></div>
-
-              <div className="row" style={{ justifyContent: "space-between" }}>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--fg)" }}>STRICT ENFORCEMENT</div>
-                  <div style={{ fontSize: 12, color: "var(--muted)" }}>Mark late, checkout strikes</div>
-                </div>
-                <ToggleSwitch defaultChecked={true} />
-              </div>
-
-              <div className="row" style={{ justifyContent: "space-between" }}>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--fg)" }}>WEEKEND ACCESS</div>
-                  <div style={{ fontSize: 12, color: "var(--muted)" }}>Allow entries on Sat/Sun</div>
-                </div>
-                <ToggleSwitch defaultChecked={true} />
-              </div>
-
-            </div>
-          </div>
-          
-        </div>
-      </div>
-
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 24 }}>
-        <button className="btn btnPrimary" style={{ background: "#5d5fef", borderRadius: 8, padding: "12px 24px", fontSize: 13, letterSpacing: 0.5, fontWeight: 700 }}>
-          <Settings size={16} /> APPLY INSTITUTIONAL SETTINGS
-        </button>
-      </div>
-
+    <div className={`stField ${half ? "half" : ""}`}>
+      <label className="stLabel">{label}</label>
+      {children}
     </div>
   )
 }
 
-function ToggleSwitch({ defaultChecked }) {
-  const [checked, setChecked] = useState(defaultChecked)
+function SectionHeader({ title, subtitle }) {
   return (
-    <div 
-      className={`toggleSwitch ${checked ? "checked" : ""}`} 
-      onClick={() => setChecked(!checked)}
-    >
-      <div className="toggleKnob" />
+    <div className="stSectionHeader">
+      <h2 className="stSectionTitle">{title}</h2>
+      {subtitle && <p className="stSectionSub">{subtitle}</p>}
     </div>
   )
 }
 
-function BrandingThemeTab() {
-  const [activeColor, setActiveColor] = useState("#4F46E5")
-  const [activeMode, setActiveMode] = useState("light")
-  
-  const colors = [
-    { hex: "#4F46E5", name: "Indigo" },
-    { hex: "#A855F7", name: "Purple" },
-    { hex: "#F43F5E", name: "Rose" },
-    { hex: "#F59E0B", name: "Amber" },
-    { hex: "#10B981", name: "Emerald" },
-    { hex: "#38BDF8", name: "Sky" }
-  ]
-
+function ComingSoon({ label }) {
   return (
-    <div className="settingsSection">
-      {/* Tab Header */}
-      <div className="settingsSectionHeader" style={{ borderBottom: "none", paddingBottom: 0 }}>
-        <div>
-          <h2 className="settingsSectionTitle">Institutional Branding</h2>
-          <p className="settingsSectionSub">Customize your enterprise identity and global interface</p>
+    <div className="stComingSoon">
+      <Settings size={40} opacity={0.12} />
+      <h3>{label}</h3>
+      <p>Configuration for this section will be available soon.</p>
+    </div>
+  )
+}
+
+/* ═══ PROFILE ════════════════════════════════════════════════════ */
+function ProfileSection({ markDirty, showToast }) {
+  const [name, setName]       = useState("Jasmine Dorathy")
+  const [username, setUsername]= useState("jasminedorathy")
+  const [role, setRole]       = useState("Administrator")
+  const [location, setLocation]= useState("Chennai, Tamil Nadu")
+  const [bio, setBio]         = useState("Enterprise admin managing QuickTims ERP system operations.")
+  return (
+    <div className="stPanel">
+      <SectionHeader title="Profile" subtitle="Update your personal information visible across the system." />
+      <div className="stCard">
+        <div className="stFormGrid">
+          <Field label="Full name" half>
+            <input className="stInput" value={name} placeholder="Your full name" onChange={e=>{setName(e.target.value);markDirty()}} />
+          </Field>
+          <Field label="Username" half>
+            <input className="stInput" value={username} placeholder="Your username" onChange={e=>{setUsername(e.target.value);markDirty()}} />
+          </Field>
+          <Field label="Profession">
+            <select className="stInput stSelect" onChange={()=>markDirty()}>
+              <option>Administrator</option>
+              <option>HR Manager</option>
+              <option>Finance Lead</option>
+              <option>Operations Head</option>
+            </select>
+          </Field>
+          <Field label="Location">
+            <select className="stInput stSelect" onChange={()=>markDirty()}>
+              <option>Chennai, Tamil Nadu</option>
+              <option>Bengaluru, Karnataka</option>
+              <option>Mumbai, Maharashtra</option>
+              <option>Hyderabad, Telangana</option>
+            </select>
+          </Field>
+          <Field label="Bio">
+            <textarea className="stInput stTextarea" value={bio} placeholder="A short bio..."
+              onChange={e=>{setBio(e.target.value);markDirty()}} rows={3} />
+          </Field>
+          <Field label="Profile link">
+            <div className="stInputAddon">
+              <span className="stInputAddonPrefix">erp.caltims.com/u/</span>
+              <input className="stInput stInputAddonField" value={username} onChange={e=>{setUsername(e.target.value);markDirty()}} />
+            </div>
+          </Field>
+        </div>
+        <div className="stCardActions">
+          <button className="stPrimaryBtn" onClick={()=>showToast("Profile updated!")}>
+            <Save size={14} /> Save Profile
+          </button>
         </div>
       </div>
+    </div>
+  )
+}
 
-      <div className="stackLg" style={{ maxWidth: 640 }}>
-        
-        {/* Card 1: Atmosphere */}
-        <div className="card">
-          <div className="cardHeader" style={{ background: "transparent", borderBottom: "none", paddingBottom: 0 }}>
-            <div className="row">
-              <div className="iconWrap" style={{ width: 32, height: 32 }}><Palette size={16} /></div>
-              <div>
-                <div className="cardTitle" style={{ color: "var(--fg)", fontWeight: 700, letterSpacing: 0, fontSize: 13.5 }}>Atmosphere</div>
-                <div className="cardSub" style={{ fontSize: 12, color: "var(--muted)" }}>Applied accent color system</div>
-              </div>
-            </div>
+/* ═══ ORGANIZATION ═══════════════════════════════════════════════ */
+function OrganizationSection({ markDirty }) {
+  const [name, setName]       = useState("CALTIMS")
+  const [addr, setAddr]       = useState("123 Enterprise Way, Tech City, Tamil Nadu 600001")
+  const [country, setCountry] = useState("India")
+  const [currency, setCurrency]= useState("INR (₹)")
+  const [editName, setEditName]= useState(false)
+  return (
+    <div className="stPanel">
+      <SectionHeader title="Organization" subtitle="Core company identity information displayed across the system." />
+      <div className="stCard">
+        {/* Inline editable company name */}
+        <div className="stIdentityRow">
+          <div className="stIdentityAvatar">{name.charAt(0)}</div>
+          <div style={{ flex: 1 }}>
+            {editName
+              ? <input autoFocus className="stInput stInlineLarge" value={name}
+                  onChange={e=>{setName(e.target.value);markDirty()}}
+                  onBlur={()=>setEditName(false)} onKeyDown={e=>e.key==="Enter"&&setEditName(false)} />
+              : <div className="stInlineView" onClick={()=>setEditName(true)}>
+                  <span className="stInlineViewName">{name}</span>
+                  <Edit3 size={13} color="var(--muted)" />
+                </div>
+            }
+            <p style={{ margin: "3px 0 0", fontSize: 12, color: "var(--muted)" }}>Click to rename your organization</p>
           </div>
-          <div className="cardBody stackLg">
-            <div className="row" style={{ gap: 16 }}>
-              {colors.map(c => (
-                <div 
-                  key={c.hex}
-                  onClick={() => setActiveColor(c.hex)}
-                  title={c.name}
-                  style={{
-                    width: 48, 
-                    height: 48,
-                    borderRadius: "50%",
-                    background: c.hex,
-                    cursor: "pointer",
-                    border: activeColor === c.hex ? "3px solid var(--surface)" : "none",
-                    boxShadow: activeColor === c.hex ? `0 0 0 2px ${c.hex}, 0 4px 12px rgba(0,0,0,0.15)` : "none",
-                    transform: activeColor === c.hex ? "scale(1.05)" : "scale(1)",
-                    transition: "all 0.2s ease"
-                  }}
-                />
+        </div>
+        <div style={{ height: 1, background: "var(--stroke)", margin: "20px 0" }} />
+        <div className="stFormGrid">
+          <Field label="Headquarters Address">
+            <textarea className="stInput stTextarea" value={addr}
+              onChange={e=>{setAddr(e.target.value);markDirty()}} rows={2} style={{ resize:"none" }} />
+          </Field>
+          <Field label="Operational Country" half>
+            <input className="stInput" value={country} onChange={e=>{setCountry(e.target.value);markDirty()}} />
+          </Field>
+          <Field label="Base Currency" half>
+            <select className="stInput stSelect" value={currency} onChange={e=>{setCurrency(e.target.value);markDirty()}}>
+              <option>USD ($)</option><option>INR (₹)</option><option>EUR (€)</option><option>GBP (£)</option>
+            </select>
+          </Field>
+        </div>
+        <div className="stCardActions">
+          <button className="stPrimaryBtn"><Save size={14}/> Save Organization</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ═══ LOGO ═══════════════════════════════════════════════════════ */
+function LogoSection({ markDirty }) {
+  const [preview, setPreview] = useState(null)
+  const [bg, setBg]           = useState("light")
+  const [drag, setDrag]       = useState(false)
+  const ref = useRef()
+  const handleFile = useCallback(e => {
+    const file = e.dataTransfer?.files[0] || e.target?.files[0]
+    if (file?.type.startsWith("image/")) { setPreview(URL.createObjectURL(file)); markDirty() }
+  }, [markDirty])
+  return (
+    <div className="stPanel">
+      <SectionHeader title="Company Logo" subtitle="Upload your brand asset. Used in reports, PDFs and the navigation bar." />
+      <div className="stCard">
+        <div className="stLogoGrid">
+          <div>
+            {/* Drop zone */}
+            <div className={`stDropZone ${drag?"drag":""} ${preview?"has":""}`}
+              style={{ background: bg==="dark"?"#0B1629":undefined }}
+              onDragOver={e=>{e.preventDefault();setDrag(true)}} onDragLeave={()=>setDrag(false)}
+              onDrop={e=>{e.preventDefault();setDrag(false);handleFile(e)}}
+              onClick={()=>ref.current?.click()}>
+              {preview
+                ? <img src={preview} alt="logo" className="stDropPreview" />
+                : <>
+                    <div className="stDropIcon"><Upload size={28}/></div>
+                    <div className="stDropText">Drag & drop your logo</div>
+                    <div className="stDropSub">PNG, SVG or WebP · Transparent background preferred · Max 2MB</div>
+                  </>
+              }
+              <input ref={ref} type="file" accept="image/*" style={{display:"none"}} onChange={handleFile}/>
+            </div>
+            {/* bg toggle */}
+            <div className="stBgToggle">
+              <span style={{fontSize:11,color:"var(--muted)",fontWeight:600}}>Preview on:</span>
+              {["light","dark"].map(b=>(
+                <button key={b} className={`stBgBtn ${bg===b?"on":""}`} onClick={()=>setBg(b)}>
+                  {b==="light"?<Sun size={11}/>:<Moon size={11}/>} {b}
+                </button>
               ))}
             </div>
-
-            <div className="field" style={{ marginTop: 12 }}>
-              <label className="fieldLabel" style={{ fontSize: 11, letterSpacing: 0.8 }}>CUSTOM PRIMARY HEX</label>
-              <div style={{ display: "flex", gap: 12 }}>
-                 <div style={{ width: 44, height: 40, borderRadius: 8, background: activeColor }} />
-                 <input 
-                   type="text" 
-                   className="input" 
-                   value={activeColor}
-                   onChange={(e) => setActiveColor(e.target.value)}
-                   style={{ width: "100%", fontFamily: "monospace", fontSize: 13 }} 
-                 />
+          </div>
+          <div className="stLogoUsage">
+            <div className="stLogoUsageLabel">Usage Preview</div>
+            {/* navbar preview */}
+            <div className="stNavbarPreview">
+              <div style={{background:"#0B1629",borderRadius:8,padding:"8px 16px",display:"flex",alignItems:"center",gap:10}}>
+                {preview
+                  ? <img src={preview} style={{height:28,width:"auto",objectFit:"contain"}} alt="nav logo"/>
+                  : <div style={{width:80,height:20,background:"rgba(255,255,255,0.15)",borderRadius:4}}/>}
+                <div style={{flex:1}}/>
+                <div style={{width:24,height:24,borderRadius:"50%",background:"linear-gradient(135deg,#1A56DB,#F97316)"}}/>
               </div>
+              <div style={{fontSize:10,color:"var(--muted)",marginTop:6,textAlign:"center"}}>Navbar</div>
             </div>
-
-            <div className="field" style={{ marginTop: 8 }}>
-              <label className="fieldLabel" style={{ fontSize: 11, letterSpacing: 0.8 }}>LIVE PREVIEW</label>
-              <div style={{ 
-                border: "1px solid var(--stroke)", 
-                borderRadius: 12, 
-                padding: "24px", 
-                background: "var(--surface)",
-                display: "flex", flexDirection: "column", gap: 16 
-              }}>
-                 {/* Fake UI elements matching screenshot preview */}
-                 <div style={{ width: "60%", height: 6, borderRadius: 3, background: "var(--surface2)", position: "relative" }} />
-                 
-                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                   <button className="btn" style={{ background: activeColor, color: "#fff", border: "none", fontSize: 12, padding: "6px 16px", borderRadius: 999 }}>ACTION</button>
-                   <div style={{ width: 24, height: 6, borderRadius: 3, background: activeColor }} />
-                   <div style={{ width: 16, height: 6, borderRadius: 3, background: activeColor, opacity: 0.3 }} />
-                 </div>
+            <div className="stNavbarPreview">
+              <div style={{background:"var(--surface2)",borderRadius:8,padding:"16px",display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
+                {preview
+                  ? <img src={preview} style={{height:36,width:"auto",objectFit:"contain"}} alt="report logo"/>
+                  : <div style={{width:100,height:24,background:"var(--stroke2)",borderRadius:4}}/>}
+                <div style={{fontSize:10,color:"var(--muted)"}}>Monthly Payroll Report — March 2026</div>
               </div>
+              <div style={{fontSize:10,color:"var(--muted)",marginTop:6,textAlign:"center"}}>Report Header</div>
             </div>
           </div>
         </div>
-
-        {/* Card 2: Display Mode */}
-        <div className="card">
-          <div className="cardHeader" style={{ background: "transparent", borderBottom: "none", paddingBottom: 0 }}>
-            <div className="row">
-              <div className="iconWrap" style={{ width: 32, height: 32 }}><Sun size={16} /></div>
-              <div>
-                <div className="cardTitle" style={{ color: "var(--fg)", fontWeight: 700, letterSpacing: 0, fontSize: 13.5 }}>Display Mode</div>
-                <div className="cardSub" style={{ fontSize: 12, color: "var(--muted)" }}>Interface preference</div>
-              </div>
-            </div>
-          </div>
-          <div className="cardBody">
-            <div className="row" style={{ gap: 12 }}>
-               {/* Mode buttons */}
-               {[
-                 { id: "light", label: "Light", icon: <Sun size={18} /> },
-                 { id: "dark", label: "Dark", icon: <Moon size={18} /> },
-                 { id: "system", label: "System", icon: <Monitor size={18} /> },
-               ].map(mode => (
-                 <button
-                   key={mode.id}
-                   onClick={() => setActiveMode(mode.id)}
-                   style={{
-                     flex: 1,
-                     display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
-                     padding: "16px",
-                     borderRadius: 12,
-                     border: activeMode === mode.id ? `1px solid ${activeColor}` : "1px solid var(--stroke)",
-                     background: "var(--surface)",
-                     color: activeMode === mode.id ? activeColor : "var(--muted)",
-                     cursor: "pointer",
-                     transition: "all 0.2s ease",
-                     boxShadow: activeMode === mode.id ? `0 0 0 1px ${activeColor}` : "none"
-                   }}
-                 >
-                   {mode.icon}
-                   <span style={{ fontSize: 12, fontWeight: 600, color: activeMode === mode.id ? "var(--fg)" : "var(--muted)" }}>{mode.label}</span>
-                 </button>
-               ))}
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 32, maxWidth: 640 }}>
-        <button className="btn btnPrimary" style={{ background: "#5d5fef", borderRadius: 8, padding: "12px 24px", fontSize: 13, letterSpacing: 0.5, fontWeight: 700 }}>
-          <RefreshCcw size={16} /> SYNC IDENTITY
-        </button>
-      </div>
-
-    </div>
-  )
-}
-
-function PlanSubscriptionTab() {
-  return (
-    <div className="settingsSection">
-      {/* Centered Wide Header Area */}
-      <div style={{ textAlign: "center", marginBottom: 48, marginTop: 12 }}>
-        <h2 style={{ fontSize: 32, fontFamily: "var(--font-display)", fontWeight: 800, margin: 0, letterSpacing: -1 }}>
-          Choose the right plan <br/>
-          <span style={{ color: "#5d5fef", fontStyle: "italic" }}>for your organization.</span>
-        </h2>
-        <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 12, lineHeight: 1.6 }}>
-          Scale your productivity with automated timesheets and payroll.<br/>
-          Start your 28-day free trial today.
-        </p>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24, paddingBottom: 64 }}>
-        
-        {/* Trial Plan */}
-        <div className="card" style={{ padding: 32, display: "flex", flexDirection: "column", position: "relative" }}>
-          <div style={{ position: "absolute", top: 24, right: 24, background: "#ecfdf5", color: "#059669", fontSize: 10, fontWeight: 800, padding: "4px 8px", borderRadius: 4, display: "flex", alignItems: "center", gap: 4, letterSpacing: 0.5 }}>
-            <Check size={12} strokeWidth={3} /> ACTIVE
-          </div>
-          
-          <div style={{ width: 40, height: 40, border: "1px solid var(--stroke2)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24 }}>
-            <Zap size={20} color="var(--fg)" />
-          </div>
-
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, letterSpacing: 0.5 }}>TRIAL</h3>
-          <p style={{ margin: "4px 0 24px 0", fontSize: 12, color: "var(--muted)" }}>Ideal for small teams trying CALTIMS.</p>
-
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 8, marginBottom: 24 }}>
-            <div style={{ fontSize: 36, fontWeight: 800, lineHeight: 1 }}>₹0</div>
-            <div style={{ fontSize: 10, color: "var(--muted)", fontWeight: 700, lineHeight: 1.2 }}>
-              FREE TRIAL<br/>28 DAYS
-            </div>
-          </div>
-
-          <div style={{ height: 1, background: "var(--stroke)", marginBottom: 24 }} />
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
-            <Feature included text="TIMESHEET ENTRY" />
-            <Feature included text="WEEKLY TIMESHEET SUBMISSION" />
-            <Feature included text="PROJECT-BASED LOGGING" />
-            <Feature included text="DASHBOARD OVERVIEW" />
-            <Feature included text="HOLIDAY CALENDAR" />
-            <Feature text="TIMESHEET HISTORY" />
-            <Feature text="ADVANCED REPORTS" />
-            <Feature text="PAYROLL AUTOMATION" />
-            <Feature text="LEAVE MANAGEMENT" />
-          </div>
-
-          <button className="btn" style={{ width: "100%", marginTop: 32, justifyContent: "center", padding: 14, background: "var(--surface2)", color: "var(--muted)", border: "none", fontSize: 11, fontWeight: 800, letterSpacing: 0.5 }}>
-            YOUR CURRENT PLAN
-          </button>
-        </div>
-
-        {/* Basic Plan */}
-        <div className="card" style={{ padding: 32, display: "flex", flexDirection: "column", position: "relative", overflow: "visible" }}>
-          <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: "var(--fg)", color: "var(--surface)", fontSize: 9, fontWeight: 800, padding: "4px 12px", borderRadius: 12, letterSpacing: 1 }}>
-            RECOMMENDED
-          </div>
-          
-          <div style={{ width: 40, height: 40, background: "#eff0fe", color: "#5d5fef", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24 }}>
-            <Shield size={20} />
-          </div>
-
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, letterSpacing: 0.5 }}>BASIC</h3>
-          <p style={{ margin: "4px 0 24px 0", fontSize: 12, color: "var(--muted)" }}>Enhanced features for growing businesses.</p>
-
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 8, marginBottom: 24 }}>
-            <div style={{ fontSize: 36, fontWeight: 800, lineHeight: 1 }}>₹29</div>
-            <div style={{ fontSize: 10, color: "var(--muted)", fontWeight: 700, lineHeight: 1.2 }}>
-              PER USER<br/>PER MONTH
-            </div>
-          </div>
-
-          <div style={{ height: 1, background: "var(--stroke)", marginBottom: 24 }} />
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
-            <Feature included text="EVERYTHING IN TRIAL" />
-            <Feature included text="UNLIMITED PROJECTS" />
-            <Feature included text="TIMESHEET HISTORY" />
-            <Feature included text="WEEKLY REPORTS" />
-            <Feature included text="HOLIDAY MANAGEMENT" />
-            <Feature included text="ADVANCED DASHBOARD" />
-            <Feature text="PAYROLL AUTOMATION" />
-            <Feature text="LEAVE MANAGEMENT" />
-            <Feature text="ROLE BASED ACCESS" />
-          </div>
-
-          <button className="btn" style={{ width: "100%", marginTop: 32, justifyContent: "center", padding: 14, fontSize: 11, fontWeight: 800, letterSpacing: 0.5, border: "1px solid var(--fg)" }}>
-            UPGRADE TO BASIC <ArrowRight size={14} style={{ marginLeft: 4 }} />
-          </button>
-        </div>
-
-        {/* Pro Plan */}
-        <div className="card" style={{ padding: 32, display: "flex", flexDirection: "column", position: "relative", overflow: "visible", borderColor: "#5d5fef", borderWidth: 2 }}>
-          <div style={{ position: "absolute", top: -12, right: 24, background: "#5d5fef", color: "#fff", fontSize: 9, fontWeight: 800, padding: "4px 12px", borderRadius: 12, letterSpacing: 1, display: "flex", alignItems: "center", gap: 4 }}>
-            <Star size={10} fill="currentColor" /> MOST POPULAR
-          </div>
-          
-          <div style={{ width: 40, height: 40, background: "#fef2f2", color: "#ef4444", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24 }}>
-            <Crown size={20} />
-          </div>
-
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, letterSpacing: 0.5 }}>PRO</h3>
-          <p style={{ margin: "4px 0 24px 0", fontSize: 12, color: "var(--muted)" }}>The ultimate workforce management suite.</p>
-
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 8, marginBottom: 24 }}>
-            <div style={{ fontSize: 36, fontWeight: 800, lineHeight: 1 }}>₹49</div>
-            <div style={{ fontSize: 10, color: "var(--muted)", fontWeight: 700, lineHeight: 1.2 }}>
-              PER USER<br/>PER MONTH
-            </div>
-          </div>
-
-          <div style={{ height: 1, background: "var(--stroke)", marginBottom: 24 }} />
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
-            <Feature included text="EVERYTHING IN BASIC" />
-            <Feature included text="FULL PAYROLL AUTOMATION" />
-            <Feature included text="LEAVE MANAGEMENT" />
-            <Feature included text="ADVANCED ANALYTICS" />
-            <Feature included text="CUSTOM REPORTS" />
-            <Feature included text="AUDIT LOGS" />
-            <Feature included text="SINGLE SIGN ON (SSO)" />
-            <Feature included text="PRIORITY 24/7 SUPPORT" />
-            <Feature included text="DEDICATED MANAGER" />
-          </div>
-
-          <button className="btn btnPrimary" style={{ width: "100%", marginTop: 32, justifyContent: "center", padding: 14, background: "#5d5fef", fontSize: 11, fontWeight: 800, letterSpacing: 0.5, border: "none" }}>
-            UPGRADE TO PRO <ArrowRight size={14} style={{ marginLeft: 4 }} />
-          </button>
+        <div className="stCardActions">
+          <button className="stPrimaryBtn" onClick={()=>ref.current?.click()}><Upload size={14}/> Upload Logo</button>
+          {preview && <button className="stGhostBtn stDangerTxt" onClick={()=>{setPreview(null);markDirty()}}><X size={13}/> Remove</button>}
         </div>
       </div>
     </div>
   )
 }
 
-function Feature({ included, text }) {
+/* ═══ LOCALIZATION ════════════════════════════════════════════════ */
+function LocalizationSection({ markDirty }) {
+  const [tz, setTz]           = useState("Asia/Kolkata (IST)")
+  const [fmt, setFmt]         = useState("DD/MM/YYYY")
+  const [fiscal, setFiscal]   = useState("April")
+  const [week, setWeek]       = useState("Monday - Friday")
+  const now = new Date()
+  const liveDate = fmt==="DD/MM/YYYY"
+    ? `${String(now.getDate()).padStart(2,"0")}/${String(now.getMonth()+1).padStart(2,"0")}/${now.getFullYear()}`
+    : fmt==="MM/DD/YYYY"
+    ? `${String(now.getMonth()+1).padStart(2,"0")}/${String(now.getDate()).padStart(2,"0")}/${now.getFullYear()}`
+    : `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, opacity: included ? 1 : 0.4 }}>
-      {included ? <Check size={14} color="#5d5fef" strokeWidth={4} /> : <Minus size={14} color="var(--muted)" strokeWidth={3} />}
-      <span style={{ fontSize: 10, fontWeight: 800, color: included ? "var(--fg)" : "var(--muted)", letterSpacing: 0.5 }}>{text}</span>
+    <div className="stPanel">
+      <SectionHeader title="Language & Region" subtitle="Regional and time-based configurations for the entire organization." />
+      <div className="stCard">
+        <div className="stFormGrid">
+          <Field label="Enterprise Timezone" half>
+            <select className="stInput stSelect" value={tz} onChange={e=>{setTz(e.target.value);markDirty()}}>
+              <option>Asia/Kolkata (IST)</option><option>America/New_York (EST)</option>
+              <option>Europe/London (GMT)</option><option>Asia/Dubai (GST)</option>
+            </select>
+          </Field>
+          <Field label="Display Date Format" half>
+            <select className="stInput stSelect" value={fmt} onChange={e=>{setFmt(e.target.value);markDirty()}}>
+              <option>DD/MM/YYYY</option><option>MM/DD/YYYY</option><option>YYYY-MM-DD</option>
+            </select>
+          </Field>
+          <Field label="Fiscal Year Start" half>
+            <select className="stInput stSelect" value={fiscal} onChange={e=>{setFiscal(e.target.value);markDirty()}}>
+              <option>April</option><option>January</option><option>July</option><option>October</option>
+            </select>
+          </Field>
+          <Field label="Standard Work Week" half>
+            <select className="stInput stSelect" value={week} onChange={e=>{setWeek(e.target.value);markDirty()}}>
+              <option>Monday - Friday</option><option>Monday - Saturday</option><option>Sunday - Thursday</option>
+            </select>
+          </Field>
+        </div>
+        {/* Live preview */}
+        <div className="stLocalePreview">
+          <div className="stLocalePreviewTitle"><Eye size={12}/> Live Preview</div>
+          <div className="stLocalePreviewRow">
+            <div className="stLocaleChip"><Calendar size={12}/> Today: <strong>{liveDate}</strong></div>
+            <div className="stLocaleChip"><MapPin size={12}/> Zone: <strong>{tz.split(" ")[0]}</strong></div>
+            <div className="stLocaleChip"><DollarSign size={12}/> Fiscal from: <strong>{fiscal}</strong></div>
+          </div>
+        </div>
+        <div className="stCardActions">
+          <button className="stPrimaryBtn"><Save size={14}/> Save Localization</button>
+        </div>
+      </div>
     </div>
   )
 }
 
-function UsersRolesTab() {
-  const [activeRole, setActiveRole] = useState("admin")
+/* ═══ OPERATIONAL PACE ════════════════════════════════════════════ */
+function PaceSection({ markDirty }) {
+  const [hrs, setHrs]   = useState(8)
+  const [strict, setStrict] = useState(true)
+  const [weekend, setWeekend] = useState(false)
+  const paceLabel = hrs<=4?"🟢 Relaxed":hrs<=7?"🟡 Balanced":hrs<=9?"🔵 Standard":"🔴 Strict"
+  const paceDesc  = hrs<=4?"Flexible hours, minimal enforcement."
+    :hrs<=7?"Moderate tracking, balanced policy."
+    :hrs<=9?"Standard 8-hour workday enforcement with timesheet compliance."
+    :"High-intensity mode — late marking, checkout verification, and strike policy active."
   return (
-    <div className="settingsSection">
-      {/* Header */}
-      <div className="settingsSectionHeader" style={{ borderBottom: "none", paddingBottom: 0, marginBottom: 24 }}>
-        <div>
-          <h2 className="settingsSectionTitle">Access Control</h2>
-          <p className="settingsSectionSub">Configure roles and system level access</p>
+    <div className="stPanel">
+      <SectionHeader title="Operational Pace" subtitle="System-wide enforcement and tracking behaviour settings." />
+      <div className="stCard">
+        <div className="stField" style={{ marginBottom: 24 }}>
+          <label className="stLabel">STANDARD WORK DAY — <strong>{hrs} hrs</strong></label>
+          <div className="stPaceScaleLabels"><span>Relaxed</span><span>Balanced</span><span>Standard</span><span>Strict</span></div>
+          <input type="range" className="stPaceSlider" min="2" max="12" value={hrs}
+            onChange={e=>{setHrs(Number(e.target.value));markDirty()}} />
+          <div className="stPaceResult">
+            <div className="stPaceResultLabel">{paceLabel}</div>
+            <div className="stPaceResultDesc">{paceDesc}</div>
+          </div>
         </div>
-        <div>
-          <button className="btn btnPrimary" style={{ background: "#5d5fef", borderRadius: 8, padding: "8px 16px", fontSize: 13, letterSpacing: 0.5, fontWeight: 700, border: "none" }}>
-            <Plus size={16} /> CREATE CUSTOM ROLE
-          </button>
+        <div style={{ display:"flex",flexDirection:"column",gap:16,paddingTop:8,borderTop:"1px solid var(--stroke)" }}>
+          <div className="stToggleRow">
+            <div>
+              <div className="stToggleLabel">Strict Enforcement</div>
+              <div className="stToggleDesc">Mark late arrivals and flag checkout violations with strike records</div>
+            </div>
+            <ToggleSwitch checked={strict} onChange={v=>{setStrict(v);markDirty()}} accent="#1A56DB"/>
+          </div>
+          <div className="stToggleRow">
+            <div>
+              <div className="stToggleLabel">Weekend Access</div>
+              <div className="stToggleDesc">Allow timesheet entries on Saturday and Sunday</div>
+            </div>
+            <ToggleSwitch checked={weekend} onChange={v=>{setWeekend(v);markDirty()}} accent="#059669"/>
+          </div>
+        </div>
+        <div className="stCardActions">
+          <button className="stPrimaryBtn"><Save size={14}/> Save Pace Settings</button>
         </div>
       </div>
+    </div>
+  )
+}
 
-      <div style={{ display: "flex", gap: 24, minHeight: 600 }}>
-        
-        {/* Left inner Sidebar: Roles */}
-        <div style={{ width: 180, display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1, paddingLeft: 14, marginBottom: 8 }}>ROLES</div>
-          {[
-            { id: "admin", label: "Admin", system: true },
-            { id: "hr", label: "HR", system: true },
-            { id: "finance", label: "Finance", system: true },
-            { id: "employee", label: "Employee", system: true }
-          ].map(role => (
-            <button
-              key={role.id}
-              onClick={() => setActiveRole(role.id)}
-              style={{
-                textAlign: "left",
-                padding: "10px 14px",
-                borderRadius: 8,
-                background: activeRole === role.id ? "#5d5fef" : "transparent",
-                color: activeRole === role.id ? "#fff" : "var(--fg)",
-                border: "none",
-                fontSize: 13.5,
-                fontWeight: 600,
-                cursor: "pointer",
-                transition: "all 0.2s"
-              }}
-            >
-              {role.label}
-            </button>
+/* ═══ NOTIFICATIONS ══════════════════════════════════════════════ */
+function NotificationsSection({ markDirty }) {
+  const events = [
+    { key:"clockin",  label:"Clock In/Out",      desc:"Time tracking events" },
+    { key:"leave",    label:"Leave Requests",    desc:"Applications & approvals" },
+    { key:"payroll",  label:"Payroll Processed", desc:"Salary credits & payslips" },
+    { key:"tasks",    label:"Task Assignments",  desc:"New tasks assigned to you" },
+    { key:"security", label:"Login Alerts",      desc:"New device or suspicious login" },
+    { key:"reports",  label:"Report Ready",      desc:"Scheduled exports completed" },
+  ]
+  const [prefs, setPrefs] = useState(() =>
+    Object.fromEntries(events.map(e=>[e.key,{email:true,sms:false,app:true}]))
+  )
+  const toggle=(ev,ch)=>{ setPrefs(p=>({...p,[ev]:{...p[ev],[ch]:!p[ev][ch]}})); markDirty() }
+  return (
+    <div className="stPanel">
+      <SectionHeader title="Notification Preferences" subtitle="Choose exactly how and where you receive system alerts." />
+      <div className="stCard" style={{ padding:0 }}>
+        <div className="stNotifTable">
+          <div className="stNotifHead">
+            <div style={{flex:1}}>Event</div>
+            {[["email",<Mail size={13}/>],["sms",<MessageSquare size={13}/>],["app",<Bell size={13}/>]].map(([ch,ic])=>(
+              <div key={ch} className="stNotifCol">{ic} {ch.toUpperCase()}</div>
+            ))}
+          </div>
+          {events.map(ev=>(
+            <div key={ev.key} className="stNotifRow">
+              <div style={{flex:1}}>
+                <div className="stNotifEvLabel">{ev.label}</div>
+                <div className="stNotifEvDesc">{ev.desc}</div>
+              </div>
+              {["email","sms","app"].map(ch=>(
+                <div key={ch} className="stNotifCol">
+                  <div className={`stNotifCheck ${prefs[ev.key][ch]?"on":""}`} onClick={()=>toggle(ev.key,ch)}>
+                    {prefs[ev.key][ch]&&<Check size={10} strokeWidth={3}/>}
+                  </div>
+                </div>
+              ))}
+            </div>
           ))}
         </div>
-
-        {/* Center Panel: Permissions Editor */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
-          {/* Header of Center Panel */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-            <h3 style={{ margin: 0, fontSize: 24, fontWeight: 800, fontFamily: "var(--font-display)" }}>
-              {activeRole === "admin" ? "Admin" : activeRole === "hr" ? "HR" : activeRole === "finance" ? "Finance" : "Employee"}
-            </h3>
-            <button className="btn" style={{ background: "#eff0fe", color: "#5d5fef", borderColor: "transparent", fontSize: 12, fontWeight: 700 }}>
-              <Lock size={14} /> ACTIVE ROLE
-            </button>
-          </div>
-
-          {/* Properties Info Row */}
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <div style={{ flex: 1, minWidth: 120, border: "1px solid #5d5fef", borderRadius: 8, padding: "8px 12px", background: "#eff0fe" }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: "#5d5fef", textTransform: "uppercase", marginBottom: 2 }}>ROLE NAME</div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--fg)" }}>{activeRole === "admin" ? "Admin" : activeRole === "hr" ? "HR" : activeRole === "finance" ? "Finance" : "Employee"}</div>
-            </div>
-            <div style={{ flex: 2, minWidth: 200, border: "1px solid var(--stroke)", borderRadius: 8, padding: "8px 12px", background: "var(--surface)" }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: "var(--muted)", textTransform: "uppercase", marginBottom: 2 }}>DESCRIPTION</div>
-              <div style={{ fontSize: 13, color: "var(--muted)" }}>Unrestricted system access with global authority.</div>
-            </div>
-            <div style={{ flex: 1, minWidth: 120, border: "1px solid var(--stroke)", borderRadius: 8, padding: "8px 12px", background: "var(--surface)" }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: "var(--muted)", textTransform: "uppercase", marginBottom: 2 }}>STATUS</div>
-              <div style={{ fontSize: 13, color: "var(--fg)", fontWeight: 600 }}>System Default</div>
-            </div>
-          </div>
-
-          {/* Permissions Search */}
-          <div className="settingsSearch" style={{ marginBottom: 0 }}>
-            <Search size={16} className="settingsSearchIcon" />
-            <input type="text" placeholder="Search permissions (e.g., Payroll, Expenses)..." className="input settingsSearchInput" style={{ borderRadius: 8, background: "var(--surface)" }} />
-          </div>
-
-          {/* Permissions Tree */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, overflowY: "auto", paddingRight: 8, paddingBottom: 64 }}>
-             
-             <PermissionNode icon={<Banknote size={16} />} title="PAYROLL" expanded={true}>
-               <PermissionLeaf title="Dashboard" perms={["View"]} />
-               <PermissionLeaf title="Payroll Engine" perms={["View", "Create", "Edit", "Delete"]} />
-               <PermissionLeaf title="Execution Ledger" perms={["View"]} />
-               <PermissionLeaf title="Payslip Generation" perms={["View", "Create"]} />
-               <PermissionLeaf title="Bank Export" perms={["View", "Create"]} />
-               <PermissionLeaf title="Payroll Reports" perms={["View"]} />
-             </PermissionNode>
-
-             <PermissionNode icon={<Users2 size={16} />} title="EMPLOYEES" expanded={true}>
-               <PermissionLeaf title="Employee Data" perms={["View", "Create", "Edit", "Delete"]} />
-               <PermissionLeaf title="Management" perms={["View", "Edit"]} />
-             </PermissionNode>
-
-             <PermissionNode icon={<Clock size={16} />} title="TIMESHEETS" expanded={true}>
-               <PermissionLeaf title="Dashboard" perms={["View"]} />
-               <PermissionLeaf title="Entry" perms={["View", "Create"]} />
-               <PermissionLeaf title="History" perms={["View"]} />
-               <PermissionLeaf title="Management" perms={["View", "Create", "Edit", "Delete"]} />
-             </PermissionNode>
-
-             <PermissionNode icon={<CalendarDays size={16} />} title="LEAVE MANAGEMENT" expanded={true}>
-               <PermissionLeaf title="Leave Tracker" perms={["View"]} />
-               <PermissionLeaf title="Leave Requests" perms={["View", "Create", "Edit", "Delete"]} />
-               <PermissionLeaf title="Leave Policies" perms={["View"]} />
-             </PermissionNode>
-
-             <PermissionNode icon={<FileText size={16} />} title="MY PAYSLIP" expanded={false}>
-               <PermissionLeaf title="Payslip View" perms={["View", "Download"]} />
-             </PermissionNode>
-
-             <PermissionNode icon={<Building2 size={16} />} title="PROJECTS" expanded={false}>
-               <PermissionLeaf title="Project List" perms={["View", "Create", "Edit", "Delete"]} />
-             </PermissionNode>
-
-          </div>
-        </div>
-
-        {/* Right Sidebar: Assigned Users */}
-        <div style={{ width: 280, display: "flex", flexDirection: "column", gap: 16, flexShrink: 0 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1 }}>ASSIGNED ADMIN USERS</div>
-          
-          <div className="settingsSearch" style={{ marginBottom: 0 }}>
-            <Search size={14} className="settingsSearchIcon" />
-            <input type="text" placeholder="Search assigned users..." className="input settingsSearchInput" style={{ borderRadius: 8, background: "var(--surface)", fontSize: 13, padding: "8px 12px 8px 32px" }} />
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, padding: "8px 0" }}>
-               <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--good)" }} /> Active (4)
-            </div>
-            {["Alex Chen", "Sarah Jenkins", "Marcus Thorne", "Elena Rodriguez"].map(u => (
-              <div key={u} style={{ padding: "8px 12px", fontSize: 13, color: "var(--fg2)", background: "var(--surface)", border: "1px solid var(--stroke)", borderRadius: 6, display: "flex", alignItems: "center", gap: 8 }}>
-                 <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#eff0fe", color: "#5d5fef", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800 }}>
-                   {u[0]}
-                 </div>
-                 {u}
-              </div>
-            ))}
-            
-            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, padding: "12px 0 4px 0", color: "var(--muted)" }}>
-               <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--warn)" }} /> Unassigned (2)
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, padding: "8px 0 4px 0", color: "var(--muted)" }}>
-               <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--bad)" }} /> Disabled (0)
-            </div>
-          </div>
-
-          {activeRole === "admin" && (
-            <div style={{ background: "var(--warn-bg)", border: "1px solid rgba(217,119,6,0.2)", borderRadius: 8, padding: 16, marginTop: "auto" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--warn-text)", fontWeight: 800, fontSize: 11, letterSpacing: 0.5, marginBottom: 8 }}>
-                <Info size={14} strokeWidth={3} /> MASTER ROLE
-              </div>
-              <div style={{ fontSize: 12, color: "var(--warn-text)", opacity: 0.9 }}>
-                This role ignores all restriction rules with global system authority.
-              </div>
-            </div>
-          )}
-
-          <div style={{ border: "1px dashed var(--stroke2)", borderRadius: 8, padding: 24, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, marginTop: activeRole === "admin" ? 0 : "auto" }}>
-             <Activity size={24} color="var(--subtle)" />
-             <div style={{ fontSize: 11, fontWeight: 800, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 0.5 }}>RECENT ACTIVITY</div>
-             <div style={{ fontSize: 12, color: "var(--subtle)" }}>Showing activity for the last 30 days</div>
-          </div>
-
-        </div>
-
       </div>
     </div>
   )
 }
 
-function PermissionNode({ icon, title, expanded, children }) {
+/* ═══ ACTIVITY LOG ═══════════════════════════════════════════════ */
+function ActivitySection() {
+  const [filter,setFilter]=useState("all")
+  const logs=[
+    {time:"Today, 12:09 PM",action:"Login",detail:"Chrome · Chennai, India",type:"auth"},
+    {time:"Today, 11:45 AM",action:"Settings Changed",detail:"Updated Operational Pace → 9h",type:"settings"},
+    {time:"Today, 10:30 AM",action:"Employee Added",detail:"Ravi Kumar onboarded",type:"hr"},
+    {time:"Yesterday, 4:12 PM",action:"Payroll Run",detail:"March 2026 · 14 employees",type:"payroll"},
+    {time:"Yesterday, 2:00 PM",action:"Leave Approved",detail:"Request #L-091 for Priya S.",type:"leave"},
+    {time:"Mar 30, 3:00 PM",action:"Report Exported",detail:"Monthly attendance (PDF)",type:"report"},
+  ]
+  const colors={auth:"#1A56DB",settings:"#7C3AED",hr:"#059669",payroll:"#F97316",leave:"#D97706",report:"#0891B2"}
+  const filtered=filter==="all"?logs:logs.filter(l=>l.type===filter)
   return (
-    <div style={{ marginBottom: 4 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "var(--surface2)", borderRadius: 8, cursor: "pointer", border: "1px solid var(--stroke)" }}>
-        {expanded ? <ChevronDown size={14} color="#5d5fef" /> : <ChevronUp size={14} color="var(--muted)" />}
-        <div style={{ color: "#5d5fef", display: "flex", alignItems: "center" }}>{icon}</div>
-        <div style={{ fontSize: 12, fontWeight: 800, color: "var(--fg)", letterSpacing: 0.5 }}>{title}</div>
+    <div className="stPanel">
+      <SectionHeader title="Activity Log" subtitle="Complete audit trail of all system changes and user actions." />
+      <div className="stLogFilters">
+        {["all","auth","settings","hr","payroll","leave","report"].map(f=>(
+          <button key={f} className={`stLogChip ${filter===f?"on":""}`} onClick={()=>setFilter(f)}>
+            {f==="all"?"All Events":f.charAt(0).toUpperCase()+f.slice(1)}
+          </button>
+        ))}
       </div>
-      {expanded && (
-        <div style={{ paddingLeft: 32, paddingTop: 8, display: "flex", flexDirection: "column", gap: 4, borderLeft: "1px solid var(--stroke)", marginLeft: 18, marginTop: 4 }}>
-          {children}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function PermissionLeaf({ title, perms }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 12px", borderRadius: 6, border: "1px solid transparent", transition: "all 0.1s" }}>
-      <div style={{ fontSize: 13, color: "var(--fg2)", fontWeight: 600 }}>{title}</div>
-      <div style={{ display: "flex", gap: 6 }}>
-        {perms.map(p => (
-          <div key={p} style={{ padding: "4px 10px", background: "var(--surface2)", color: "var(--fg2)", border: "1px solid var(--stroke)", borderRadius: 6, fontSize: 11, fontWeight: 700, letterSpacing: 0.5 }}>
-            {p}
+      <div className="stTimeline">
+        {filtered.map((log,i)=>(
+          <div key={i} className="stTimelineItem">
+            <div className="stTimelineDot" style={{background:colors[log.type]}}/>
+            <div className="stTimelineCard">
+              <div className="stTimelineTop">
+                <span className="stTimelineAction">{log.action}</span>
+                <span className="stTimelineBadge" style={{background:`${colors[log.type]}15`,color:colors[log.type]}}>{log.type}</span>
+              </div>
+              <div className="stTimelineDetail">{log.detail}</div>
+              <div className="stTimelineMeta">{log.time}</div>
+            </div>
           </div>
         ))}
       </div>
     </div>
   )
 }
+
+/* ═══ USERS / ROLES ══════════════════════════════════════════════ */
+function UsersSection({ showToast }) {
+  const [role,setRole]=useState("admin")
+  const roles=[{id:"admin",label:"Admin"},{id:"hr",label:"HR"},{id:"finance",label:"Finance"},{id:"employee",label:"Employee"}]
+  const permsMap={
+    admin:["View","Create","Edit","Delete","Export","Admin"],
+    hr:["View","Create","Edit","Export"],
+    finance:["View","Create","Export"],
+    employee:["View","Create"]
+  }
+  const modules=["Payroll","Employees","Timesheets","Leave Management","Reports","Settings"]
+  return (
+    <div className="stPanel">
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24}}>
+        <SectionHeader title="Users & Roles" subtitle="Configure access levels and role-based permissions."/>
+        <button className="stPrimaryBtn" onClick={()=>showToast("Role creation coming soon.","warn")}><Plus size={13}/> New Role</button>
+      </div>
+      <div className="stRolesLayout">
+        <div className="stRolesList">
+          {roles.map(r=>(
+            <button key={r.id} className={`stRoleItem ${role===r.id?"on":""}`} onClick={()=>setRole(r.id)}>
+              <div className="stRoleItemDot" style={{background:role===r.id?"#1A56DB":"var(--stroke2)"}}/>
+              {r.label}
+            </button>
+          ))}
+        </div>
+        <div className="stCard" style={{flex:1,minWidth:0}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+            <h3 style={{margin:0,fontSize:18,fontWeight:800,fontFamily:"var(--font-display)"}}>{role.charAt(0).toUpperCase()+role.slice(1)}</h3>
+            <span style={{fontSize:11,fontWeight:700,background:"#EFF0FE",color:"#1A56DB",padding:"4px 12px",borderRadius:6,display:"flex",alignItems:"center",gap:5}}>
+              <Lock size={11}/> System Role
+            </span>
+          </div>
+          <table className="stPermTable">
+            <thead>
+              <tr>
+                <th>Module</th>
+                {["View","Create","Edit","Delete","Export","Admin"].map(p=><th key={p}>{p}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {modules.map(mod=>(
+                <tr key={mod}>
+                  <td>{mod}</td>
+                  {["View","Create","Edit","Delete","Export","Admin"].map(p=>(
+                    <td key={p}>
+                      {permsMap[role].includes(p)
+                        ? <Check size={13} color="#1A56DB" strokeWidth={3}/>
+                        : <div style={{width:13,height:2,borderRadius:1,background:"var(--stroke2)"}}/>}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ═══ PLAN ════════════════════════════════════════════════════════ */
+function PlanSection() {
+  return (
+    <div className="stPanel">
+      <SectionHeader title="Plans & Subscription" subtitle="Manage your organization's billing plan and usage limits."/>
+      <div className="stPlanGrid">
+        {[
+          { name:"Trial", price:"₹0", sub:"28 days free", icon:<Zap size={18}/>, color:"var(--fg2)",
+            feat:["Timesheet Entry","Weekly Submission","Dashboard Overview","Holiday Calendar"],
+            miss:["Advanced Reports","Payroll","Leave Management"], current:true },
+          { name:"Basic", price:"₹29", sub:"per user/month", icon:<Shield size={18}/>, color:"#1A56DB",
+            feat:["Everything in Trial","Unlimited Projects","Timesheet History","Weekly Reports","Holiday Mgmt"],
+            miss:["Payroll Automation","Leave Management"], badge:"RECOMMENDED" },
+          { name:"Pro", price:"₹49", sub:"per user/month", icon:<Crown size={18}/>, color:"#5d5fef",
+            feat:["Everything in Basic","Full Payroll","Leave Management","Analytics","SSO","Priority Support"],
+            miss:[], badge:"MOST POPULAR", pro:true },
+        ].map(plan=>(
+          <div key={plan.name} className={`stPlanCard ${plan.pro?"pro":""}`}>
+            {plan.badge&&<div className="stPlanBadge" style={{background:plan.pro?"#5d5fef":"var(--fg)"}}>{plan.badge}</div>}
+            {plan.current&&<div className="stPlanBadge" style={{background:"#059669",left:16,right:"auto"}}>
+              <Check size={10} strokeWidth={3}/> ACTIVE
+            </div>}
+            <div className="stPlanIcon" style={{color:plan.color,background:`${plan.color}12`}}>{plan.icon}</div>
+            <h3 className="stPlanName">{plan.name}</h3>
+            <div className="stPlanPrice">{plan.price} <span>{plan.sub}</span></div>
+            <div style={{height:1,background:"var(--stroke)",margin:"16px 0"}}/>
+            <div className="stPlanFeats">
+              {plan.feat.map(f=><div key={f} className="stPlanFeat"><Check size={12} color="#059669" strokeWidth={3}/>{f}</div>)}
+              {plan.miss.map(f=><div key={f} className="stPlanFeat stPlanFeatOff"><Minus size={12} color="var(--muted)"/>{f}</div>)}
+            </div>
+            <button className={`stPlanBtn ${plan.pro?"pro":plan.current?"curr":""}`}>
+              {plan.current?"Current Plan":`Upgrade to ${plan.name}`}
+              {!plan.current&&<ArrowRight size={13}/>}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ═══ SECURITY — SESSIONS ════════════════════════════════════════ */
+function SecuritySessionsSection({ showToast }) {
+  const sessions=[
+    {device:"Chrome on Windows",loc:"Chennai, India",time:"Active now",current:true},
+    {device:"Safari on iPhone",loc:"Chennai, India",time:"2 hours ago"},
+    {device:"Edge on Laptop",loc:"Bengaluru, India",time:"Yesterday, 3:42 PM"},
+  ]
+  return (
+    <div className="stPanel">
+      <SectionHeader title="Active Sessions" subtitle="Devices currently logged in to your account."/>
+      <div className="stCard">
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {sessions.map((s,i)=>(
+            <div key={i} className="stSessionRow">
+              <div className="stSessionIcon"><Monitor size={15}/></div>
+              <div style={{flex:1}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:13,fontWeight:700,color:"var(--fg)"}}>{s.device}</span>
+                  {s.current&&<span className="stCurrentChip">Current</span>}
+                </div>
+                <div style={{fontSize:12,color:"var(--muted)"}}>{s.loc} · {s.time}</div>
+              </div>
+              {!s.current&&<button className="stDangerBtn" onClick={()=>showToast("Session revoked.")}>Revoke</button>}
+            </div>
+          ))}
+        </div>
+        <div style={{marginTop:20,paddingTop:20,borderTop:"1px solid var(--stroke)"}}>
+          <button className="stGhostBtn stDangerTxt" onClick={()=>showToast("Logged out all other devices.")}>
+            <LogOut size={13}/> Logout from all devices
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ═══ SECURITY — PASSWORD ════════════════════════════════════════ */
+function SecurityPasswordSection({ showToast }) {
+  const [pw, setPw]     = useState("")
+  const [show, setShow] = useState(false)
+  const str = pw.length===0?0:pw.length<6?1:pw.length<10?2
+    :/[A-Z]/.test(pw)&&/\d/.test(pw)&&/[^A-Za-z0-9]/.test(pw)?4:3
+  const strLabel=["","Weak","Fair","Good","Strong"][str]
+  const strColor=["","#DC2626","#F97316","#1A56DB","#059669"][str]
+  return (
+    <div className="stPanel">
+      <SectionHeader title="Change Password" subtitle="Update your authentication credentials."/>
+      <div className="stCard" style={{maxWidth:480}}>
+        <div style={{display:"flex",flexDirection:"column",gap:16}}>
+          <Field label="Current Password">
+            <input className="stInput" type="password" placeholder="Enter current password"/>
+          </Field>
+          <Field label="New Password">
+            <div style={{position:"relative"}}>
+              <input className="stInput" type={show?"text":"password"} placeholder="Enter new password"
+                value={pw} onChange={e=>setPw(e.target.value)} style={{paddingRight:40}}/>
+              <button onClick={()=>setShow(v=>!v)}
+                style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"var(--muted)"}}>
+                {show?<EyeOff size={15}/>:<Eye size={15}/>}
+              </button>
+            </div>
+            {pw.length>0&&(
+              <div style={{display:"flex",alignItems:"center",gap:8,marginTop:6}}>
+                <div style={{display:"flex",gap:3,flex:1}}>
+                  {[1,2,3,4].map(i=>(
+                    <div key={i} style={{height:3,flex:1,borderRadius:2,background:i<=str?strColor:"var(--stroke2)",transition:"background .3s"}}/>
+                  ))}
+                </div>
+                <span style={{fontSize:11,fontWeight:700,color:strColor}}>{strLabel}</span>
+              </div>
+            )}
+          </Field>
+          <Field label="Confirm New Password">
+            <input className="stInput" type="password" placeholder="Repeat new password"/>
+          </Field>
+          <button className="stPrimaryBtn" style={{alignSelf:"flex-start"}} onClick={()=>showToast("Password updated!")}>
+            <Key size={13}/> Update Password
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ═══ SECURITY — 2FA ═════════════════════════════════════════════ */
+function Security2FASection({ markDirty, showToast }) {
+  const [on, setOn] = useState(true)
+  return (
+    <div className="stPanel">
+      <SectionHeader title="Two-Factor Authentication" subtitle="Add an extra layer of security to your account."/>
+      <div className="stCard" style={{maxWidth:480}}>
+        <div className="stToggleRow" style={{marginBottom:on?20:0}}>
+          <div>
+            <div className="stToggleLabel">Enable 2FA</div>
+            <div className="stToggleDesc">Require OTP verification on every new device login</div>
+          </div>
+          <ToggleSwitch checked={on} onChange={v=>{setOn(v);markDirty();showToast(`2FA ${v?"enabled":"disabled"}.${v?"":" Your account is now less secure."}`,v?"success":"warn")}} accent="#059669"/>
+        </div>
+        {on&&(
+          <div style={{background:"#ECFDF5",border:"1px solid rgba(5,150,105,0.2)",borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:10}}>
+            <CheckCircle2 size={16} color="#059669"/>
+            <span style={{fontSize:13,fontWeight:600,color:"#059669"}}>Your account is protected with two-factor authentication.</span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+
+

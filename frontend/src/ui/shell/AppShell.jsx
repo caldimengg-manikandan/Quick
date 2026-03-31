@@ -7,7 +7,8 @@ import { routes } from "../routes.js"
 import { ThemeToggle } from "./ThemeToggle.jsx"
 import { CommandPalette } from "./CommandPalette.jsx"
 import { NotificationCenter } from "./NotificationCenter.jsx"
-import logo from "../../assets/logo.png"
+import logoDark from "../../assets/logo.png"
+import logoWhite from "../../assets/logo_white.png"
 
 import {
   Home,
@@ -22,7 +23,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Settings,
-  Search
+  Search,
+  ChevronDown
 } from "lucide-react"
 
 const NAV = [
@@ -44,10 +46,15 @@ function TopbarClock() {
     const t = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(t)
   }, [])
+  
+  const formattedTime = now.toLocaleTimeString([], { hour12: true, hour: 'numeric', minute: '2-digit' })
+  const formattedDate = now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
+  
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: "var(--fg2)", background: "var(--surface2)", padding: "4px 10px", borderRadius: 8, border: "1px solid var(--stroke)" }}>
-      <Clock size={14} opacity={0.6} />
-      {now.toLocaleTimeString([], { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+    <div className="topbarWidget clockWidget">
+      <Clock size={14} className="widgetIcon" />
+      <span className="clockTime">{formattedTime}</span>
+      <span className="clockDate">{formattedDate}</span>
     </div>
   )
 }
@@ -72,54 +79,59 @@ export function AppShell() {
       <CommandPalette open={cmdOpen} setOpen={setCmdOpen} />
       {/* ── Topbar ───────────────────────────── */}
       <header className="topbar">
-        <div className="brand">
-          <img src={logo} alt="QuickTIMS" style={{ height: "36px", width: "auto", objectFit: "contain" }} />
-          <div className="brandTag">Enterprise</div>
+        {/* Left: Brand */}
+        <div className="topbarLeft">
+          <div className="brand">
+            <img src={logoDark} alt="QuickTIMS" className="brand-logo logo-light-mode" />
+            <img src={logoWhite} alt="QuickTIMS" className="brand-logo logo-dark-mode" />
+            <div className="brand-divider" />
+            <span className="brand-module">Enterprise ERP</span>
+          </div>
         </div>
 
+        {/* Center: Search */}
+        <div className="topbarCenter">
+          <button
+            type="button"
+            className="topbar-search-btn"
+            onClick={() => setCmdOpen(true)}
+            title="Search command palette (⌘K)"
+          >
+            <Search size={15} className="searchIcon" />
+            <span className="searchText">Search everywhere...</span>
+            <span className="searchKbd">⌘K</span>
+          </button>
+        </div>
+
+        {/* Right: Actions & Profile */}
         <div className="topbarRight">
           {offline && (
-            <span className="badge badgeBase badgeWarn" title="Backend unreachable — showing demo data">
-              <span className="badgeDot"></span> Demo Mode
+            <span className="topbarBadge warnPulse" title="Backend unreachable — showing demo data">
+              <span className="pulseDot"></span> Demo Mode
             </span>
           )}
 
           <TopbarClock />
 
-          <button
-            type="button"
-            className="btn btnGhost"
-            style={{ display: "flex", alignItems: "center", gap: 12, padding: "6px 12px", background: "var(--surface2)", borderRadius: 8, color: "var(--muted)", fontSize: 13, border: "1px solid var(--stroke)" }}
-            onClick={() => setCmdOpen(true)}
-            title="Search command palette"
-          >
-            <Search size={14} /> Search anything...
-            <span style={{ fontSize: 10, fontWeight: 800, background: "var(--surface)", padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5 }}>⌘K</span>
-          </button>
-
-          <NotificationCenter />
+          <div className="topbarActions">
+           <NotificationCenter />
+           <ThemeToggle />
+          </div>
 
           <div className="topbarDivider"></div>
 
-          {/* Clean User Profile Area */}
-          <div className="userProfileWrap">
-            <div className="userAvatar">
-              {user.username.charAt(0).toUpperCase()}
+          <button className="userProfilePill" onClick={logout} title="Click to log out">
+            <div className="userAvatarWrap">
+              <div className="userAvatar">
+                {user.username.charAt(0).toUpperCase()}
+              </div>
+              <div className="activeStatus"></div>
             </div>
             <div className="userInfoStack">
               <span className="userName">{user.username}</span>
               <span className="userRole">{user.role}</span>
             </div>
-          </div>
-
-          <ThemeToggle />
-
-          <button className="btn btnGhost" onClick={logout} type="button" title="Sign out" style={{ padding: "8px" }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" y1="12" x2="9" y2="12"></line>
-            </svg>
+            <ChevronDown size={14} className="userChevron" />
           </button>
         </div>
       </header>

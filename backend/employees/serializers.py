@@ -17,6 +17,11 @@ class EmployeeUserSerializer(serializers.ModelSerializer):
 class EmployeeSerializer(serializers.ModelSerializer):
     id = serializers.CharField(read_only=True)
     user = EmployeeUserSerializer(read_only=True)
+    job_site_name = serializers.SlugRelatedField(
+        source='assigned_job_site',
+        read_only=True,
+        slug_field='name'
+    )
 
     class Meta:
         model = Employee
@@ -28,6 +33,8 @@ class EmployeeSerializer(serializers.ModelSerializer):
             "title",
             "hourly_rate",
             "hire_date",
+            "assigned_job_site",
+            "job_site_name",
             "is_active",
             "created_at",
             "updated_at",
@@ -57,6 +64,7 @@ class EmployeeCreateSerializer(serializers.ModelSerializer):
             "title",
             "hourly_rate",
             "hire_date",
+            "assigned_job_site",
             "is_active",
         )
 

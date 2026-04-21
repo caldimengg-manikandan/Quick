@@ -17,6 +17,14 @@ function toneForStatus(status) {
   return "warn"
 }
 
+function formatEmployeeId(value) {
+  if (!value) return ""
+  const s = String(value).trim()
+  const m = /^EMP(\d+)$/i.exec(s.replace(/\s+/g, ""))
+  if (m) return `EMP ${m[1].padStart(3, "0")}`
+  return s
+}
+
 export function LeavesPage() {
   const { user } = useAuth()
   const [items, setItems] = useState([])
@@ -129,8 +137,7 @@ export function LeavesPage() {
         ) : items.length ? (
           <div className="table">
             <div className="tableRow tableHead">
-              <div>ID</div>
-              {user?.role === "admin" && <div>Employee</div>}
+              <div>Employee ID</div>
               <div>Type</div>
               <div>Start</div>
               <div>End</div>
@@ -139,8 +146,10 @@ export function LeavesPage() {
             </div>
             {items.map((i) => (
               <div key={i.id} className="tableRow">
-                <div>{i.id}</div>
-                {user?.role === "admin" && <div style={{ fontWeight: 600 }}>{i.employee_name || "Unknown"}</div>}
+                <div style={{ fontWeight: 600 }}>
+                  {i.employee ? formatEmployeeId(i.employee) : "—"}
+                  {user?.role === "admin" && i.employee_name ? <div className="muted">{i.employee_name}</div> : null}
+                </div>
                 <div>{i.leave_type}</div>
                 <div>{i.start_date}</div>
                 <div>{i.end_date}</div>

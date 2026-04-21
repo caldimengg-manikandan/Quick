@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Check, ArrowRight, Building2, Users2, Workflow, Clock, Banknote, CalendarDays, Sparkles } from "lucide-react"
-import logoWhite from "../../assets/logo_white.png"
+import { CalTrackLogo } from "../components/CalTrackLogo.jsx"
 
 import { routes } from "../routes.js"
 
@@ -34,7 +34,7 @@ export function OnboardingPage() {
 
         <div style={{ zIndex: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 64 }}>
-            <img src={logoWhite} alt="QuickTIMS" style={{ height: "40px", width: "auto", objectFit: "contain" }} />
+            <CalTrackLogo size="md" showTagline />
           </div>
 
           <h1 style={{ fontSize: 48, fontWeight: 800, fontFamily: "var(--font-display)", letterSpacing: -1, lineHeight: 1.1, marginBottom: 24 }}>
@@ -126,7 +126,14 @@ export function OnboardingPage() {
 
               <button
                 className="btn btnPrimary"
-                onClick={() => setStep(2)}
+                onClick={() => {
+                  const name = orgName.trim()
+                  if (name) {
+                    localStorage.setItem("quicktims.orgName", name)
+                    window.dispatchEvent(new CustomEvent("quicktims:orgName"))
+                  }
+                  setStep(2)
+                }}
                 disabled={!orgName.trim()}
                 style={{ width: "100%", padding: 16, background: "#5d5fef", fontSize: 14, fontWeight: 800, borderRadius: 12, border: "none" }}
               >

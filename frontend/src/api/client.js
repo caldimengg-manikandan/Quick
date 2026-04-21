@@ -2,7 +2,7 @@ import { getTokens, setTokens } from "../state/auth/tokens.js"
 import { isJwtExpired } from "../state/auth/jwt.js"
 import { getMock } from "./mockData.js"
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api"
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api"
 
 // Track offline state so banner can be shown once
 let _offline = false
@@ -28,7 +28,21 @@ async function refreshAccessToken(tokens) {
 }
 
 export async function apiRequest(path, init = {}, attemptRefresh = true) {
-  const tokens = getTokens()
+  let tokens = getTokens()
+
+  // Proactively refresh if access token is expired but refresh token exists
+  if (attemptRefresh && tokens?.access && tokens?.refresh && isJwtExpired(tokens.access)) {
+    const nextTokens = await refreshAccessToken(tokens)
+    if (nextTokens) {
+      setTokens(nextTokens)
+      tokens = nextTokens
+    } else {
+      setTokens(null)
+      window.dispatchEvent(new CustomEvent("quicktims:session-expired"))
+      throw { status: 401, body: { detail: "Session expired. Please log in again." } }
+    }
+  }
+
   const headers = new Headers(init.headers ?? {})
   if (!headers.has("Content-Type") && init.json !== undefined) headers.set("Content-Type", "application/json")
   if (tokens?.access) headers.set("Authorization", `Bearer ${tokens.access}`)
@@ -47,6 +61,12 @@ export async function apiRequest(path, init = {}, attemptRefresh = true) {
         return apiRequest(path, init, false)
       }
       setTokens(null)
+      window.dispatchEvent(new CustomEvent("quicktims:session-expired"))
+    }
+
+    // Also handle 401 when no refresh token exists at all
+    if (res.status === 401 && !tokens?.access) {
+      window.dispatchEvent(new CustomEvent("quicktims:session-expired"))
     }
 
     if (!res.ok) {

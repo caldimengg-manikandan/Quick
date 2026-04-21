@@ -63,9 +63,33 @@ export const MOCK = {
   "/payroll/records/": {
     count: 3,
     results: [
-      { id: 1, net_pay: "3820.50", regular_hours: "80.00", overtime_hours: "6.00", period: { start_date: "2026-03-01", end_date: "2026-03-15" } },
-      { id: 2, net_pay: "4012.00", regular_hours: "80.00", overtime_hours: "10.50", period: { start_date: "2026-02-15", end_date: "2026-02-28" } },
-      { id: 3, net_pay: "3600.00", regular_hours: "80.00", overtime_hours: "0.00", period: { start_date: "2026-02-01", end_date: "2026-02-14" } }
+      {
+        id: 1,
+        employee: "EMP001",
+        employee_name: "alice",
+        net_pay: "3820.50",
+        regular_hours: "80.00",
+        overtime_hours: "6.00",
+        period: { start_date: "2026-03-01", end_date: "2026-03-15" }
+      },
+      {
+        id: 2,
+        employee: "EMP002",
+        employee_name: "bob",
+        net_pay: "4012.00",
+        regular_hours: "80.00",
+        overtime_hours: "10.50",
+        period: { start_date: "2026-02-15", end_date: "2026-02-28" }
+      },
+      {
+        id: 3,
+        employee: "EMP003",
+        employee_name: "carol",
+        net_pay: "3600.00",
+        regular_hours: "80.00",
+        overtime_hours: "0.00",
+        period: { start_date: "2026-02-01", end_date: "2026-02-14" }
+      }
     ]
   },
 

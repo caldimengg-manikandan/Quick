@@ -4,6 +4,14 @@ import { apiRequest, unwrapResults } from "../../api/client.js"
 import { useAuth } from "../../state/auth/useAuth.js"
 import { Button, Card, Input, Pill } from "../components/kit.jsx"
 
+function formatEmployeeId(value) {
+  if (!value) return ""
+  const s = String(value).trim()
+  const m = /^EMP(\d+)$/i.exec(s.replace(/\s+/g, ""))
+  if (m) return `EMP ${m[1].padStart(3, "0")}`
+  return s
+}
+
 export function PayrollPage() {
   const { user } = useAuth()
   const [records, setRecords] = useState([])
@@ -103,7 +111,7 @@ export function PayrollPage() {
         ) : records.length ? (
           <div className="table">
             <div className="tableRow tableHead">
-              <div>ID</div>
+              <div>Employee</div>
               <div>Period</div>
               <div className="right">Net</div>
               <div className="right">Regular</div>
@@ -111,7 +119,11 @@ export function PayrollPage() {
             </div>
             {records.map((r) => (
               <div key={r.id} className="tableRow">
-                <div>{r.id}</div>
+                <div style={{ fontWeight: 600 }}>
+                  {r.employee ? formatEmployeeId(r.employee) : "—"}
+                  {r.employee_name ? <div className="muted">{r.employee_name}</div> : null}
+                  {!r.employee && !r.employee_name ? <div className="muted">{r.id}</div> : null}
+                </div>
                 <div>
                   <span className="muted">
                     {r.period?.start_date} → {r.period?.end_date}

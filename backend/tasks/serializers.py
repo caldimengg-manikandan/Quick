@@ -26,6 +26,11 @@ class TaskSerializer(serializers.ModelSerializer):
     
     assigned_to_detail = AssignedToSerializer(source="assigned_to", read_only=True)
     assigned_by_name = serializers.SerializerMethodField()
+    job_site_name = serializers.SlugRelatedField(
+        source='job_site',
+        read_only=True,
+        slug_field='name'
+    )
     actual_hours = serializers.ReadOnlyField()
     attachments = serializers.SerializerMethodField()
 
@@ -35,6 +40,8 @@ class TaskSerializer(serializers.ModelSerializer):
         if ret.get('id'): ret['id'] = str(ret['id'])
         if ret.get('assigned_to'): ret['assigned_to'] = str(ret['assigned_to'])
         if ret.get('assigned_by'): ret['assigned_by'] = str(ret['assigned_by'])
+        if ret.get('job_site'): ret['job_site'] = str(ret['job_site'])
+        if ret.get('time_log'): ret['time_log'] = str(ret['time_log'])
         return ret
 
     class Meta:
@@ -54,9 +61,17 @@ class TaskSerializer(serializers.ModelSerializer):
             "due_date",
             "estimated_hours",
             "actual_hours",
+            "job_site",
+            "job_site_name",
+            "job_address",
             "location",
             "location_lat",
             "location_lon",
+            "geofence_radius",
+            "client_name",
+            "require_selfie",
+            "require_before_after_photos",
+            "time_log",
             "employee_notes",
             "admin_notes",
             "started_at",

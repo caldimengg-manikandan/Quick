@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Break, TimeLog
+from .models import Break, TimeLog, JobSite
 
 
 @admin.register(TimeLog)
@@ -13,3 +13,10 @@ class TimeLogAdmin(admin.ModelAdmin):
 @admin.register(Break)
 class BreakAdmin(admin.ModelAdmin):
     list_display = ("time_log", "break_start", "break_end")
+
+
+@admin.register(JobSite)
+class JobSiteAdmin(admin.ModelAdmin):
+    list_display = ("name", "organization", "lat", "lng", "geofence_radius")
+    list_filter = ("organization",)
+    search_fields = ("name", "address")

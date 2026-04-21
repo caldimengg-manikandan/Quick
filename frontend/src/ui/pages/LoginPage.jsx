@@ -4,7 +4,7 @@ import { useAuth } from "../../state/auth/useAuth.js"
 import { apiRequest } from "../../api/client.js"
 import { routes } from "../routes.js"
 import { useGoogleLogin } from "@react-oauth/google"
-import logo from "../../assets/logo.png"
+import { CalTrackLogo } from "../components/CalTrackLogo.jsx"
 
 /* ──────────────────────────────────────────────
    REVIEW DATA
@@ -148,12 +148,16 @@ export function LoginPage() {
   const { login, register, loginWithGoogle } = useAuth()
   const navigate = useNavigate()
 
+  const postLoginRoute = () => {
+    return routes.get_started
+  }
+
   const googleLoginHandler = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setLoading(true)
       try {
         await loginWithGoogle(tokenResponse.access_token)
-        navigate(routes.dashboard)
+        navigate(postLoginRoute())
       } catch (err) {
         setError(err?.body?.detail || "Google login failed.")
       } finally { setLoading(false) }
@@ -198,7 +202,7 @@ export function LoginPage() {
       setLoading(true)
       try {
         await login(username.trim(), password)
-        navigate(routes.dashboard)
+        navigate(postLoginRoute())
       } catch (err) {
         setError(err?.body?.detail || "Login failed.")
       } finally { setLoading(false) }
@@ -241,7 +245,7 @@ export function LoginPage() {
       <div className="qt-left-panel">
         {/* Logo */}
         <div className="qt-left-logo">
-          <img src={logo} alt="QuickTIMS" style={{ height: "42px", width: "auto", objectFit: "contain" }} />
+          <CalTrackLogo size="lg" showTagline />
         </div>
 
         {/* Hero illustration area */}

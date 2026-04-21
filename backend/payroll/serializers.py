@@ -14,7 +14,8 @@ class PayrollPeriodSerializer(serializers.ModelSerializer):
 
 class PayrollRecordSerializer(serializers.ModelSerializer):
     id = serializers.CharField(read_only=True)
-    employee = serializers.CharField(source="employee.id", read_only=True)
+    employee = serializers.CharField(source="employee.employee_id", read_only=True)
+    employee_name = serializers.CharField(source="employee.user.get_full_name", read_only=True)
     generated_by = serializers.CharField(source="generated_by.id", read_only=True)
     period = PayrollPeriodSerializer(read_only=True)
 
@@ -24,6 +25,7 @@ class PayrollRecordSerializer(serializers.ModelSerializer):
             "id",
             "period",
             "employee",
+            "employee_name",
             "hourly_rate",
             "regular_hours",
             "overtime_hours",

@@ -9,9 +9,49 @@ from django.contrib.auth import get_user_model
 from .serializers import UserSerializer
 
 
+def _generate_next_employee_id(organization):
+    from employees.models import Employee
+    prefix = "EMP"
+    qs = Employee.objects.all()
+    if organization is not None:
+        qs = qs.filter(user__organization=organization)
+    max_n = 0
+    for v in qs.values_list("employee_id", flat=True):
+        if not v:
+            continue
+        s = str(v).strip().upper().replace(" ", "")
+        if not s.startswith(prefix):
+            continue
+        tail = s[len(prefix):]
+        if not tail.isdigit():
+            continue
+        n = int(tail)
+        if n > max_n:
+            max_n = n
+    n = max_n + 1
+    while True:
+        cand = f"{prefix}{n:03d}"
+        if not Employee.objects.filter(employee_id=cand).exists():
+            return cand
+        n += 1
+
+
+def _ensure_pretty_employee_id(employee, organization):
+    if not employee or not employee.employee_id:
+        return
+    raw = str(employee.employee_id).strip()
+    if raw.upper().startswith("EMP-"):
+        next_id = _generate_next_employee_id(organization)
+        employee.employee_id = next_id
+        employee.save(update_fields=["employee_id", "updated_at"])
+
+
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
+        from employees.models import Employee
+        emp = Employee.objects.filter(user=user).first()
+        _ensure_pretty_employee_id(emp, user.organization)
         token = super().get_token(user)
         token["role"] = str(user.role)
         token["username"] = str(user.username)
@@ -64,14 +104,15 @@ class GoogleLoginView(APIView):
             
             # Auto-create Employee profile to prevent Time Tracker error
             from employees.models import Employee
-            Employee.objects.get_or_create(
+            emp, _ = Employee.objects.get_or_create(
                 user=user,
                 defaults={
-                    "employee_id": f"EMP-{str(user.id)[:10]}",
+                    "employee_id": _generate_next_employee_id(user.organization),
                     "title": "Staff",
                     "hourly_rate": 0,
                 }
             )
+            _ensure_pretty_employee_id(emp, user.organization)
             
         refresh = CustomTokenObtainPairSerializer.get_token(user)
         return Response({
@@ -109,14 +150,15 @@ class RegisterView(APIView):
 
         # Create Profile
         from employees.models import Employee
-        Employee.objects.get_or_create(
+        emp, _ = Employee.objects.get_or_create(
             user=user,
             defaults={
-                "employee_id": f"EMP-{str(user.id)[:8].upper()}",
+                "employee_id": _generate_next_employee_id(user.organization),
                 "title": "New Hire",
                 "hourly_rate": 0,
             }
         )
+        _ensure_pretty_employee_id(emp, user.organization)
 
         refresh = CustomTokenObtainPairSerializer.get_token(user)
         return Response({

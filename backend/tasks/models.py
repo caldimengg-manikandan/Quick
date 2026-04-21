@@ -62,9 +62,32 @@ class Task(models.Model):
     estimated_hours  = models.DecimalField(max_digits=5, decimal_places=2, default=1.00)
 
     # Location
+    job_site         = models.ForeignKey(
+        'time_tracking.JobSite',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="tasks",
+        help_text="Link to an established job site, if applicable."
+    )
+    job_address      = models.TextField(blank=True, help_text="Full address of the job location.")
     location         = models.CharField(max_length=300, blank=True)
     location_lat     = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
     location_lon     = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    geofence_radius  = models.PositiveIntegerField(null=True, blank=True, help_text="Radius in meters to verify location.")
+    client_name      = models.CharField(max_length=200, blank=True)
+
+    # Verification Settings
+    require_selfie   = models.BooleanField(default=False)
+    require_before_after_photos = models.BooleanField(default=False)
+
+    # Time tracking link
+    time_log = models.OneToOneField(
+        'time_tracking.TimeLog',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="task",
+        help_text="The time log associated with this task."
+    )
 
     # Employee notes / completion
     employee_notes   = models.TextField(blank=True)

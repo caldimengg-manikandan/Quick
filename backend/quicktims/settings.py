@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "scheduling.apps.SchedulingConfig",
     "reports.apps.ReportsConfig",
     "tasks.apps.TasksConfig",
+    "live_locations.apps.LiveLocationsConfig",
 ]
 
 MIDDLEWARE = [
@@ -102,6 +103,7 @@ MIGRATION_MODULES = {
     "scheduling": None,
     "reports": None,
     "tasks": None,
+    "live_locations": None,
 }
 
 # Silence mongodb.E001 for Django's own built-in models (auth, sessions) whose
@@ -129,7 +131,7 @@ SIMPLE_JWT = {
 
 CORS_ALLOWED_ORIGINS = [
     o
-    for o in os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")
+    for o in os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174").split(",")
     if o
 ]
 CORS_ALLOW_CREDENTIALS = True

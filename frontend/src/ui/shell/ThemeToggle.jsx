@@ -11,6 +11,7 @@ function getInitialTheme() {
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme
   localStorage.setItem(STORAGE_KEY, theme)
+  window.dispatchEvent(new CustomEvent("quicktims:theme", { detail: theme }))
 }
 
 export function ThemeToggle() {
@@ -20,6 +21,26 @@ export function ThemeToggle() {
   useEffect(() => {
     applyTheme(theme)
   }, [theme])
+
+  useEffect(() => {
+    function sync() {
+      const t = document.documentElement.dataset.theme
+      if (t === "dark" || t === "light") setTheme(t)
+      else setTheme(getInitialTheme())
+    }
+    function onStorage(e) {
+      if (e?.key === STORAGE_KEY) sync()
+    }
+    function onThemeEvent() {
+      sync()
+    }
+    window.addEventListener("storage", onStorage)
+    window.addEventListener("quicktims:theme", onThemeEvent)
+    return () => {
+      window.removeEventListener("storage", onStorage)
+      window.removeEventListener("quicktims:theme", onThemeEvent)
+    }
+  }, [])
 
   return (
     <button
@@ -33,4 +54,3 @@ export function ThemeToggle() {
     </button>
   )
 }
-

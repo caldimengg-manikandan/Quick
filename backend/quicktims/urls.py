@@ -11,6 +11,7 @@ urlpatterns = [
     path("api/scheduling/", include("scheduling.urls")),
     path("api/reports/", include("reports.urls")),
     path("api/tasks/", include("tasks.urls")),
+    path("api/live-locations/", include("live_locations.urls")),
 ]
 
 if settings.DEBUG:

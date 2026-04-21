@@ -34,13 +34,13 @@ function getComponent(components, ...types) {
  */
 function scoreBySpecificity(result) {
   const t = result.types ?? []
-  if (t.some((x) => ["establishment", "point_of_interest"].includes(x)))      return 110
-  if (t.some((x) => ["street_address", "premise"].includes(x)))                return 100
+  if (t.some((x) => ["establishment", "point_of_interest"].includes(x))) return 110
+  if (t.some((x) => ["street_address", "premise"].includes(x))) return 100
   if (t.some((x) => ["sublocality_level_1", "sublocality", "neighborhood"].includes(x))) return 80
-  if (t.includes("route"))                                                      return 60
-  if (t.includes("locality"))                                                   return 40
-  if (t.includes("administrative_area_level_2"))                                return 20
-  if (t.includes("administrative_area_level_1"))                                return 10
+  if (t.includes("route")) return 60
+  if (t.includes("locality")) return 40
+  if (t.includes("administrative_area_level_2")) return 20
+  if (t.includes("administrative_area_level_1")) return 10
   return 5
 }
 
@@ -93,8 +93,8 @@ async function getAddressFromGoogle(lat, lon) {
     const placeName = poiResult?.name ?? ""   // Google sets `name` for POIs
 
     // ── 2. Pick the most detailed result for address components ───────────
-    const sorted     = [...results].sort((a, b) => scoreBySpecificity(b) - scoreBySpecificity(a))
-    const best       = sorted[0]
+    const sorted = [...results].sort((a, b) => scoreBySpecificity(b) - scoreBySpecificity(a))
+    const best = sorted[0]
     const components = best.address_components ?? []
 
     // Area / industrial zone / neighbourhood
@@ -124,7 +124,7 @@ async function getAddressFromGoogle(lat, lon) {
     // ── 3. Assemble the output ────────────────────────────────────────────
     // Format: "PlaceName, Area, City, State - Pincode"
     const mainParts = [placeName, area, city, state].filter(Boolean)
-    const address   = mainParts.join(", ")
+    const address = mainParts.join(", ")
     return pincode ? `${address} - ${pincode}` : address
 
   } catch (err) {
@@ -147,7 +147,7 @@ async function getAddressFromNominatim(lat, lon) {
   try {
     const res = await fetch(
       `https://nominatim.openstreetmap.org/reverse` +
-        `?format=jsonv2&lat=${lat}&lon=${lon}&zoom=17&addressdetails=1`,
+      `?format=jsonv2&lat=${lat}&lon=${lon}&zoom=17&addressdetails=1`,
       { headers: { "Accept-Language": "en" } }
     )
     if (!res.ok) return ""
@@ -158,12 +158,12 @@ async function getAddressFromNominatim(lat, lon) {
 
     // Area / zone name
     const suburb = a.suburb || a.neighbourhood || a.industrial || a.quarter || ""
-    const road   = a.road || ""
-    const area   = suburb || road
+    const road = a.road || ""
+    const area = suburb || road
 
     // City — reliable admin settlement
-    const city    = a.city || a.town || a.village || a.county || ""
-    const state   = a.state || ""
+    const city = a.city || a.town || a.village || a.county || ""
+    const state = a.state || ""
     const pincode = a.postcode || ""
 
     // Don't duplicate suburb if it equals city

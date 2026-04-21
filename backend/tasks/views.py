@@ -128,11 +128,12 @@ class EmployeeTaskListView(APIView):
 
 class EmployeeTaskActionView(APIView):
     """
-    PATCH /api/tasks/my/<pk>/start/     → mark In Progress (records started_at)
-    PATCH /api/tasks/my/<pk>/complete/  → mark Completed   (records completed_at)
-    PATCH /api/tasks/my/<pk>/notes/     → update employee notes / status
+    POST/PATCH /api/tasks/my/<pk>/start/     → mark In Progress (records started_at)
+    POST/PATCH /api/tasks/my/<pk>/complete/  → mark Completed   (records completed_at)
+    PATCH      /api/tasks/my/<pk>/notes/     → update employee notes / status
     """
     permission_classes = [IsAuthenticated]
+    parser_classes = [FormParser, MultiPartParser]
 
     def get_object(self, pk, user):
         try:
@@ -140,23 +141,66 @@ class EmployeeTaskActionView(APIView):
         except Task.DoesNotExist:
             return None
 
+    def post(self, request, pk, action):
+        return self.handle_action(request, pk, action)
+
     def patch(self, request, pk, action):
+        return self.handle_action(request, pk, action)
+
+    def handle_action(self, request, pk, action):
         task = self.get_object(pk, request.user)
         if not task:
             return Response({"detail": "Not found or not assigned to you."}, status=status.HTTP_404_NOT_FOUND)
 
         if action == "start":
             if task.status == Task.Status.PENDING:
-                task.status     = Task.Status.IN_PROGRESS
+                from time_tracking.models import TimeLog
+                lat = request.data.get("lat")
+                lon = request.data.get("lon")
+                photo = request.FILES.get("photo")
+
+                employee_profile = getattr(request.user, "employee_profile", None)
+                timelog = None
+                if employee_profile:
+                    timelog = TimeLog.objects.create(
+                        employee=employee_profile,
+                        work_date=timezone.localdate(),
+                        clock_in=timezone.now(),
+                        clock_in_lat=lat,
+                        clock_in_lon=lon,
+                        clock_in_photo=photo,
+                    )
+                
+                task.status = Task.Status.IN_PROGRESS
                 task.started_at = timezone.now()
-                task.save(update_fields=["status", "started_at"])
+                task.time_log = timelog
+                task.save()
+
         elif action == "complete":
             if task.status in (Task.Status.PENDING, Task.Status.IN_PROGRESS):
-                task.status       = Task.Status.COMPLETED
+                from time_tracking.models import TimeLogPhoto
+                photo = request.FILES.get("photo")
+                notes = request.data.get("notes", "")
+
+                task.status = Task.Status.COMPLETED
                 task.completed_at = timezone.now()
+                if notes:
+                    task.employee_notes = notes
                 if not task.started_at:
                     task.started_at = task.completed_at
-                task.save(update_fields=["status", "completed_at", "started_at"])
+                
+                if task.time_log:
+                    task.time_log.clock_out = timezone.now()
+                    task.time_log.clock_out_notes = notes
+                    task.time_log.save()
+                    if photo:
+                        TimeLogPhoto.objects.create(
+                            time_log=task.time_log,
+                            photo=photo,
+                            photo_type="after"
+                        )
+                task.save()
+
         elif action == "notes":
             ser = TaskStatusUpdateSerializer(task, data=request.data, partial=True)
             ser.is_valid(raise_exception=True)

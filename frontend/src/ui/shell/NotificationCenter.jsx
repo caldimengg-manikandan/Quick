@@ -275,7 +275,7 @@ export function NotificationCenter() {
           position: "absolute", top: "calc(100% + 8px)", right: -12, width: 360,
           background: "var(--surface)", borderRadius: 16,
           boxShadow: "0 10px 40px rgba(0,0,0,0.15), 0 0 0 1px var(--stroke)",
-          zIndex: 100, display: "flex", flexDirection: "column", overflow: "hidden",
+          zIndex: 99999, display: "flex", flexDirection: "column", overflow: "hidden",
           animation: "fadeIn 0.2s ease"
         }}>
           <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--stroke)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
